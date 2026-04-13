@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Panel Administrativo de Optimización de Transporte Público
 
-## Getting Started
+Aplicación web orientada a la gestión, monitoreo y visualización del sistema de transporte público basado en GPS.
 
-First, run the development server:
+## 📌 Descripción
+Este sistema permite a los administradores supervisar en tiempo real el estado de las unidades de transporte, gestionar rutas y analizar información relevante para la toma de decisiones.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Actúa como interfaz de interacción con la API backend, facilitando el control y la visualización de los datos procesados.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🧠 Enfoque de Desarrollo
+El frontend está diseñado siguiendo buenas prácticas modernas de desarrollo:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Separación de responsabilidades
+- Componentización reutilizable
+- Integración eficiente con servicios backend
+- Enfoque en rendimiento y experiencia de usuario
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Tecnologías Utilizadas
+- **React** para la construcción de interfaces de usuario
+- **Next.js** como framework para renderizado y optimización
+- Consumo de API REST para la interacción con el backend
+- Integración con herramientas de visualización geográfica (mapas)
 
-## Learn More
+## ⚙️ Funcionalidades Principales
+- Visualización en tiempo real de unidades de transporte
+- Gestión de rutas y vehículos
+- Monitoreo de ubicaciones GPS
+- Panel de control administrativo
+- Visualización de métricas y datos operativos
 
-To learn more about Next.js, take a look at the following resources:
+## 🎯 Objetivo
+Brindar una herramienta intuitiva y eficiente para la administración del sistema de transporte, permitiendo una mejor supervisión y toma de decisiones basada en datos.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📌 Estado del Proyecto
+Proyecto en desarrollo como parte de una propuesta de tesis orientada a la optimización del transporte público mediante tecnologías web y geolocalización.
