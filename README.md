@@ -33,3 +33,11 @@ Brindar una herramienta intuitiva y eficiente para la administración del sistem
 
 ## 📌 Estado del Proyecto
 Proyecto en desarrollo como parte de una propuesta de tesis orientada a la optimización del transporte público mediante tecnologías web y geolocalización.
+
+## 🔐 Variables de entorno
+1. Copia el archivo de ejemplo:
+   - `cp .env.example .env`
+2. Ajusta los valores para tu entorno.
+
+Variables actuales:
+- `NEXT_PUBLIC_API_BASE_URL`: URL base de la API backend (ejemplo local: `http://localhost:3000`).
