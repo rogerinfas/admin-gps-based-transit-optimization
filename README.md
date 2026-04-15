@@ -2,6 +2,10 @@
 
 Aplicación web orientada a la gestión, monitoreo y visualización del sistema de transporte público basado en GPS.
 
+## 🌐 Demo en Vivo
+La aplicación se encuentra desplegada y accesible en la siguiente URL:
+👉 [**https://gps-based-transit-optimization.onlinestornsoftware.win/**](https://gps-based-transit-optimization.onlinestornsoftware.win/)
+
 ## 📌 Descripción
 Este sistema permite a los administradores supervisar en tiempo real el estado de las unidades de transporte, gestionar rutas y analizar información relevante para la toma de decisiones.
 
