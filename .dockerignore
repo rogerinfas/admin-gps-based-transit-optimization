@@ -5,8 +5,8 @@ coverage
 .github
 .env
 .env.*
-Dockerfile*
-docker-compose*.yml
+docker/Dockerfile*
+docker/docker-compose*.yml
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*

@@ -1,13 +1,13 @@
 services:
   admin:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
       args:
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
     container_name: transit-admin
     restart: unless-stopped
     env_file:
-      - .env
+      - ../.env
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
