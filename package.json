@@ -1,5 +1,5 @@
 {
-  "name": "admin-api-gps-based-transit-optimization",
+  "name": "admin-gps-based-transit-optimization",
   "version": "0.1.0",
   "private": true,
   "scripts": {
