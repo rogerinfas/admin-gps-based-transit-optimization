@@ -41,4 +41,4 @@ jobs:
             NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
             EOF
 
-            docker compose -f docker/docker-compose.prod.yml up -d --build
+            docker compose -p transit-frontend -f docker/docker-compose.prod.yml up -d --build
