@@ -23,6 +23,7 @@ jobs:
           key: ${{ secrets.VPS_KEY }}
           port: ${{ secrets.VPS_PORT }}
           envs: APP_PATH,REPO_URL,BRANCH_NAME,FRONTEND_PORT,NEXT_PUBLIC_API_BASE_URL
+          command_timeout: 30m
           script: |
             set -e
 
