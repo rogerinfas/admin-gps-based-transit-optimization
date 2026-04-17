@@ -14,7 +14,7 @@ COPY . .
 ARG NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 RUN pnpm build
-RUN pnpm prune --prod
+RUN pnpm prune --prod --ignore-scripts
 
 FROM base AS runner
 ENV NODE_ENV=production
