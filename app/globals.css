@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #000000;
-  --surface: #f5f7fa;
+  --background: #f3f5f8;
+  --foreground: #0f1722;
+  --surface: #e9edf3;
   --surface-strong: #ffffff;
-  --primary: #276ef1;
+  --primary: #4f6f8f;
   --primary-contrast: #ffffff;
-  --muted: #1f1f1f;
-  --success: #05a357;
-  --warning: #ffc043;
-  --route-line: #276ef1;
+  --muted: #5c6b7a;
+  --success: #1f8f63;
+  --warning: #c6922f;
+  --route-line: #5d7fa2;
 }
 
 @theme inline {
@@ -30,45 +30,45 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #000000;
-    --foreground: #ffffff;
-    --surface: #121212;
-    --surface-strong: #1f1f1f;
-    --primary: #276ef1;
+    --background: #0c1118;
+    --foreground: #e8edf3;
+    --surface: #131c26;
+    --surface-strong: #1b2633;
+    --primary: #7f9fbe;
     --primary-contrast: #ffffff;
-    --muted: #1f1f1f;
-    --success: #05a357;
-    --warning: #ffc043;
-    --route-line: #276ef1;
+    --muted: #9aa8b6;
+    --success: #4db58a;
+    --warning: #e3b258;
+    --route-line: #9fb8d0;
   }
 }
 
 /* Explicit user-selected dark theme */
 :root[data-theme="dark"] {
-  --background: #000000;
-  --foreground: #ffffff;
-  --surface: #121212;
-  --surface-strong: #1f1f1f;
-  --primary: #276ef1;
+  --background: #0c1118;
+  --foreground: #e8edf3;
+  --surface: #131c26;
+  --surface-strong: #1b2633;
+  --primary: #7f9fbe;
   --primary-contrast: #ffffff;
-  --muted: #1f1f1f;
-  --success: #05a357;
-  --warning: #ffc043;
-  --route-line: #276ef1;
+  --muted: #9aa8b6;
+  --success: #4db58a;
+  --warning: #e3b258;
+  --route-line: #9fb8d0;
 }
 
 /* Explicit user-selected light theme */
 :root[data-theme="light"] {
-  --background: #ffffff;
-  --foreground: #000000;
-  --surface: #f5f7fa;
+  --background: #f3f5f8;
+  --foreground: #0f1722;
+  --surface: #e9edf3;
   --surface-strong: #ffffff;
-  --primary: #276ef1;
+  --primary: #4f6f8f;
   --primary-contrast: #ffffff;
-  --muted: #1f1f1f;
-  --success: #05a357;
-  --warning: #ffc043;
-  --route-line: #276ef1;
+  --muted: #5c6b7a;
+  --success: #1f8f63;
+  --warning: #c6922f;
+  --route-line: #5d7fa2;
 }
 
 body {
