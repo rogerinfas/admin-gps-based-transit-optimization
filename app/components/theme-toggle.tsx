@@ -1,7 +1,7 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 type Theme = "light" | "dark";
 
@@ -36,7 +36,13 @@ function applyTheme(theme: Theme) {
 }
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(() => resolveInitialTheme());
+  const [manualTheme, setManualTheme] = useState<Theme | null>(null);
+  const resolvedTheme = useSyncExternalStore(
+    () => () => {},
+    () => resolveInitialTheme(),
+    () => "light",
+  );
+  const theme = manualTheme ?? resolvedTheme;
 
   useEffect(() => {
     applyTheme(theme);
@@ -45,7 +51,7 @@ export default function ThemeToggle() {
 
   const toggleTheme = () => {
     const nextTheme: Theme = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
+    setManualTheme(nextTheme);
     applyTheme(nextTheme);
     window.localStorage.setItem(THEME_KEY, nextTheme);
   };
