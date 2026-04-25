@@ -9,7 +9,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.transit-admin.rule=Host(`gps-based-transit-optimization.onlinestornsoftware.win`)"
-      - "traefik.http.routers.transit-admin.entrypoints=https"
+      - "traefik.http.routers.transit-admin.entrypoints=websecure"
       - "traefik.http.routers.transit-admin.tls.certresolver=cloudflare"
       - "traefik.http.services.transit-admin.loadbalancer.server.port=3000"
 
