@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f3f5f8;
-  --foreground: #0f1722;
-  --surface: #e9edf3;
+  --background: #f6f6f6;
+  --foreground: #0a0a0a;
+  --surface: #ececec;
   --surface-strong: #ffffff;
-  --primary: #4f6f8f;
+  --primary: #111111;
   --primary-contrast: #ffffff;
-  --muted: #5c6b7a;
-  --success: #1f8f63;
-  --warning: #c6922f;
-  --route-line: #5d7fa2;
+  --muted: #5f6368;
+  --success: #12b76a;
+  --warning: #f79009;
+  --route-line: #1f2937;
 }
 
 @theme inline {
@@ -30,45 +30,45 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0c1118;
-    --foreground: #e8edf3;
-    --surface: #131c26;
-    --surface-strong: #1b2633;
-    --primary: #7f9fbe;
-    --primary-contrast: #ffffff;
-    --muted: #9aa8b6;
-    --success: #4db58a;
-    --warning: #e3b258;
-    --route-line: #9fb8d0;
+    --background: #0b0b0b;
+    --foreground: #f4f4f5;
+    --surface: #151515;
+    --surface-strong: #1d1d1d;
+    --primary: #ffffff;
+    --primary-contrast: #111111;
+    --muted: #a1a1aa;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --route-line: #d4d4d8;
   }
 }
 
 /* Explicit user-selected dark theme */
 :root[data-theme="dark"] {
-  --background: #0c1118;
-  --foreground: #e8edf3;
-  --surface: #131c26;
-  --surface-strong: #1b2633;
-  --primary: #7f9fbe;
-  --primary-contrast: #ffffff;
-  --muted: #9aa8b6;
-  --success: #4db58a;
-  --warning: #e3b258;
-  --route-line: #9fb8d0;
+  --background: #0b0b0b;
+  --foreground: #f4f4f5;
+  --surface: #151515;
+  --surface-strong: #1d1d1d;
+  --primary: #ffffff;
+  --primary-contrast: #111111;
+  --muted: #a1a1aa;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --route-line: #d4d4d8;
 }
 
 /* Explicit user-selected light theme */
 :root[data-theme="light"] {
-  --background: #f3f5f8;
-  --foreground: #0f1722;
-  --surface: #e9edf3;
+  --background: #f6f6f6;
+  --foreground: #0a0a0a;
+  --surface: #ececec;
   --surface-strong: #ffffff;
-  --primary: #4f6f8f;
+  --primary: #111111;
   --primary-contrast: #ffffff;
-  --muted: #5c6b7a;
-  --success: #1f8f63;
-  --warning: #c6922f;
-  --route-line: #5d7fa2;
+  --muted: #5f6368;
+  --success: #12b76a;
+  --warning: #f79009;
+  --route-line: #1f2937;
 }
 
 body {
