@@ -37,10 +37,10 @@ function applyTheme(theme: Theme) {
 
 export default function ThemeToggle() {
   const [manualTheme, setManualTheme] = useState<Theme | null>(null);
-  const resolvedTheme = useSyncExternalStore(
+  const resolvedTheme = useSyncExternalStore<Theme>(
     () => () => {},
     () => resolveInitialTheme(),
-    () => "light",
+    () => "light" as Theme,
   );
   const theme = manualTheme ?? resolvedTheme;
 
@@ -61,18 +61,13 @@ export default function ThemeToggle() {
       type="button"
       onClick={toggleTheme}
       aria-label="Cambiar tema de color"
-      className="inline-flex items-center gap-2 rounded-xl border border-foreground/20 bg-surface px-4 py-2 text-sm font-medium text-foreground transition hover:bg-surface-strong"
+      title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-foreground/20 bg-surface text-foreground transition hover:bg-surface-strong"
     >
       {theme === "dark" ? (
-        <>
-          <Sun size={16} />
-          <span>Modo claro</span>
-        </>
+        <Sun size={16} />
       ) : (
-        <>
-          <Moon size={16} />
-          <span>Modo oscuro</span>
-        </>
+        <Moon size={16} />
       )}
     </button>
   );
