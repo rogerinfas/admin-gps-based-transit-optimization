@@ -1,10 +1,6 @@
 services:
   admin:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-      args:
-        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+    image: ${ADMIN_IMAGE:-rderoger/admin-gps-based-transit-optimization:${IMAGE_TAG:-latest}}
     restart: unless-stopped
     env_file:
       - ../.env
