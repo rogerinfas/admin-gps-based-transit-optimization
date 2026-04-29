@@ -1,39 +1,10 @@
-import ThemeToggle from "./components/theme-toggle";
 import Image from "next/image";
+import Link from "next/link";
+import PageShell from "@/components/layout/page-shell";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="bg-black text-white">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-3 md:px-10">
-          <div className="flex items-center gap-8">
-            <span className="text-xl font-semibold tracking-tight">TransiGo</span>
-            <nav className="hidden items-center gap-5 text-sm md:flex">
-              <a href="#" className="text-white/85 transition hover:text-white">
-                Viaje
-              </a>
-              <a href="#" className="text-white/85 transition hover:text-white">
-                Rutas
-              </a>
-              <a href="#" className="text-white/85 transition hover:text-white">
-                Monitoreo
-              </a>
-              <a href="#" className="text-white/85 transition hover:text-white">
-                Reportes
-              </a>
-            </nav>
-          </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <button className="text-sm text-white/90 transition hover:text-white">Ayuda</button>
-            <button className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-black transition hover:bg-white/90">
-              Inicia sesion
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8 md:px-10">
+    <PageShell navbarVariant="dark">
         <section className="grid items-start gap-8 lg:grid-cols-[1fr_430px]">
           <div className="max-w-lg">
             <p className="text-sm text-muted">Lima, PE</p>
@@ -59,9 +30,9 @@ export default function Home() {
               </div>
             </div>
 
-            <button className="mt-4 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-contrast transition hover:opacity-90">
-              Ver rutas sugeridas
-            </button>
+            <Link href="/operations" className="mt-4 inline-block rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-contrast transition hover:opacity-90">
+              Ir al panel de operaciones
+            </Link>
 
             <p className="mt-3 text-sm text-muted">Consulta estado de buses y ETA de llegada por corredor.</p>
           </div>
@@ -129,7 +100,6 @@ export default function Home() {
             <p className="mt-2 text-sm text-muted">Seguimiento GPS y alertas en tiempo casi real.</p>
           </article>
         </section>
-      </main>
-    </div>
+    </PageShell>
   );
 }
