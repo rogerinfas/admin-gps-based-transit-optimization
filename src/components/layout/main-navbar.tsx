@@ -11,6 +11,7 @@ type MainNavbarProps = {
 const navItems = [
   { href: "/", label: "Inicio" },
   { href: "/operations", label: "Operaciones" },
+  { href: "/simulation", label: "Monitoreo" },
 ];
 
 export default function MainNavbar({ variant = "light" }: MainNavbarProps) {
