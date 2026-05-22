@@ -16,12 +16,14 @@ interface SimulationMapProps {
   routeId: string;
 }
 
+import { getBackendUrl } from '@/lib/api/types/backend';
+
 export default function SimulationMap({ routeId }: SimulationMapProps) {
   const [route, setRoute] = useState<{ name: string; path?: [number, number][] } | null>(null);
   const [busPos, setBusPos] = useState<[number, number] | null>(null);
   const [progress, setProgress] = useState(0);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+  const API_URL = getBackendUrl();
 
   // 1. Cargar datos de la ruta al inicio
   useEffect(() => {

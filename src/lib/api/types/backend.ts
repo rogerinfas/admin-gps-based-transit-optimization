@@ -17,6 +17,10 @@ export const getBackendUrl = (): string => {
     return envUrl;
   }
 
+  if (window.location.protocol === "https:" && envUrl.startsWith("http://")) {
+    return "/api/backend-proxy";
+  }
+
   const currentHost = window.location.hostname;
   if (currentHost === "localhost" || currentHost === "127.0.0.1") {
     return envUrl;

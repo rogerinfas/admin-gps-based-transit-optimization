@@ -19,9 +19,11 @@ interface Route {
   name: string;
 }
 
+import { getBackendUrl } from '@/lib/api/types/backend';
+
 export default function SimulationPage() {
   const [routeId, setRouteId] = useState<string | null>(null);
-  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+  const API_URL = getBackendUrl();
 
   useEffect(() => {
     // Buscamos la ruta T1 de Arequipa
