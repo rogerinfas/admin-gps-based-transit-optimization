@@ -65,7 +65,7 @@ export default function SimulationPage() {
                   </div>
                   <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm transition hover:shadow-md">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Destino</h3>
-                    <p className="text-2xl font-bold text-slate-800 mt-1">El Palomar</p>
+                    <p className="text-2xl font-bold text-slate-800 mt-1">Guardia Civil</p>
                   </div>
                   <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm transition hover:shadow-md">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Estado</h3>
