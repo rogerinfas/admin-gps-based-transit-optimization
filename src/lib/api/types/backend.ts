@@ -44,6 +44,20 @@ export const getBackendUrl = (): string => {
 
 export const BACKEND_URL = getBackendUrl();
 
+/**
+ * Construye una URL de la API concatenando segmentos sin slashes duplicados.
+ */
+export const backendUrl = (
+  baseUrl: string,
+  endpoint?: string,
+): string => {
+  let url = baseUrl.replace(/\/$/, "");
+  if (endpoint) {
+    url += `/${endpoint.replace(/^\//, "")}`;
+  }
+  return url;
+};
+
 export const enhancedFetch = async (
   input: RequestInfo | URL,
   init?: RequestInit,
