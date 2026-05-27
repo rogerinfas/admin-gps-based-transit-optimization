@@ -78,6 +78,40 @@ export interface paths {
         patch: operations["RouteController_update"];
         trace?: never;
     };
+    "/routes/{id}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Subir o reemplazar la imagen de una ruta */
+        post: operations["RouteController_uploadImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/routes/{id}/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Obtener un punto interpolado para simulación */
+        get: operations["RouteController_simulate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -196,7 +230,12 @@ export interface components {
              * @description Descripción opcional para operaciones
              * @example Ruta urbana Characato - Linea A
              */
-            description?: Record<string, never> | null;
+            description?: string | null;
+            /**
+             * @description URL de la imagen del bus/ruta
+             * @example https://ejemplo.com/bus.jpg
+             */
+            imageUrl?: string;
             /**
              * @description Indica si la ruta está operativa
              * @example true
@@ -225,6 +264,11 @@ export interface components {
              */
             description: Record<string, never> | null;
             /**
+             * @description URL de la imagen de la ruta
+             * @example https://ejemplo.com/bus.jpg
+             */
+            imageUrl: Record<string, never> | null;
+            /**
              * @description Indica si la ruta está operativa
              * @example true
              */
@@ -239,6 +283,34 @@ export interface components {
              * @example 2026-04-28T15:00:00.000Z
              */
             updatedAt: string;
+            /**
+             * @description Geometría de la ruta de Ida en formato de coordenadas [[lon, lat], ...]
+             * @example [
+             *       [
+             *         -71.4883,
+             *         -16.4716
+             *       ],
+             *       [
+             *         -71.531,
+             *         -16.406
+             *       ]
+             *     ]
+             */
+            outboundPath?: number[][];
+            /**
+             * @description Geometría de la ruta de Regreso en formato de coordenadas [[lon, lat], ...]
+             * @example [
+             *       [
+             *         -71.531,
+             *         -16.406
+             *       ],
+             *       [
+             *         -71.4883,
+             *         -16.4716
+             *       ]
+             *     ]
+             */
+            returnPath?: number[][];
         };
         UpdateRouteDto: {
             /**
@@ -255,12 +327,51 @@ export interface components {
              * @description Descripción opcional para operaciones
              * @example Ruta urbana Characato - Linea A
              */
-            description?: Record<string, never> | null;
+            description?: string | null;
+            /**
+             * @description URL de la imagen del bus/ruta
+             * @example https://ejemplo.com/bus.jpg
+             */
+            imageUrl?: string;
             /**
              * @description Indica si la ruta está operativa
              * @example true
              */
             isActive?: boolean;
+            /**
+             * @description Geometría LineString (GeoJSON) para la ruta de Ida
+             * @example {
+             *       "type": "LineString",
+             *       "coordinates": [
+             *         [
+             *           -71.53,
+             *           -16.4
+             *         ],
+             *         [
+             *           -71.54,
+             *           -16.41
+             *         ]
+             *       ]
+             *     }
+             */
+            outboundPathGeoJson?: Record<string, never>;
+            /**
+             * @description Geometría LineString (GeoJSON) para la ruta de Regreso
+             * @example {
+             *       "type": "LineString",
+             *       "coordinates": [
+             *         [
+             *           -71.54,
+             *           -16.41
+             *         ],
+             *         [
+             *           -71.53,
+             *           -16.4
+             *         ]
+             *       ]
+             *     }
+             */
+            returnPathGeoJson?: Record<string, never>;
         };
     };
     responses: never;
@@ -560,6 +671,68 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    RouteController_uploadImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador de la ruta */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RouteResponseDto"];
+                };
+            };
+            /** @description Ruta no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RouteController_simulate: {
+        parameters: {
+            query: {
+                /** @description Progreso de la ruta (0.0 a 1.0) */
+                progress: string;
+            };
+            header?: never;
+            path: {
+                /** @description Identificador de la ruta */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Punto interpolado [lon, lat] */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number[];
+                };
             };
         };
     };
