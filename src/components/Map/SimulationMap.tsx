@@ -19,7 +19,7 @@ interface SimulationMapProps {
 import { getBackendUrl } from '@/lib/api/types/backend';
 
 export default function SimulationMap({ routeId }: SimulationMapProps) {
-  const [route, setRoute] = useState<{ name: string; path?: [number, number][] } | null>(null);
+  const [route, setRoute] = useState<{ name: string; outboundPath?: [number, number][]; returnPath?: [number, number][] } | null>(null);
   const [busPos, setBusPos] = useState<[number, number] | null>(null);
   const [progress, setProgress] = useState(0);
 
@@ -55,8 +55,12 @@ export default function SimulationMap({ routeId }: SimulationMapProps) {
     fetch(`${API_URL}/routes/${routeId}/simulate?progress=${progress}`)
       .then(res => res.json())
       .then(data => {
-        // El Backend devuelve [lon, lat], Leaflet espera [lat, lon]
-        setBusPos([data[1], data[0]]);
+        if (Array.isArray(data) && data.length === 2) {
+          // El Backend devuelve [lon, lat], Leaflet espera [lat, lon]
+          setBusPos([data[1], data[0]]);
+        } else {
+          setBusPos(null);
+        }
       })
       .catch(err => console.error('Error en simulación:', err));
   }, [routeId, progress, API_URL]);
@@ -67,7 +71,8 @@ export default function SimulationMap({ routeId }: SimulationMapProps) {
     </div>
   );
 
-  const polylinePositions = route.path?.map((c: [number, number]) => [c[1], c[0]]) || [];
+  const polylinePositionsOutbound = route.outboundPath?.map((c: [number, number]) => [c[1], c[0]]) || [];
+  const polylinePositionsReturn = route.returnPath?.map((c: [number, number]) => [c[1], c[0]]) || [];
 
   return (
     <div className="relative w-full overflow-hidden border border-slate-200 shadow-xl rounded-2xl">
@@ -92,13 +97,23 @@ export default function SimulationMap({ routeId }: SimulationMapProps) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
         />
         
-        {polylinePositions.length > 0 && (
+        {polylinePositionsOutbound.length > 0 && (
           <Polyline 
-            positions={polylinePositions} 
+            positions={polylinePositionsOutbound} 
             color="#2563eb" 
             weight={6} 
             opacity={0.6} 
-            dashArray="1, 10" // Estilo punteado para simular ruta
+            dashArray="1, 10" // Estilo punteado para simular ruta de Ida
+          />
+        )}
+        
+        {polylinePositionsReturn.length > 0 && (
+          <Polyline 
+            positions={polylinePositionsReturn} 
+            color="#ea580c" 
+            weight={6} 
+            opacity={0.6} 
+            dashArray="1, 10" // Estilo punteado para simular ruta de Regreso
           />
         )}
         
