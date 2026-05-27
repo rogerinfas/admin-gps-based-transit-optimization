@@ -78,8 +78,9 @@ export default function RouteEditorMap({ routeId }: RouteEditorMapProps) {
 
       const geojsonCoords = data.routes[0].geometry.coordinates;
       setter(geojsonCoords.map((c: [number, number]) => [c[1], c[0]]));
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message);
     } finally {
       setIsRouting(false);
     }
@@ -127,7 +128,7 @@ export default function RouteEditorMap({ routeId }: RouteEditorMapProps) {
       const finalOutbound = snappedPathOutbound.length > 0 ? snappedPathOutbound : waypointsOutbound;
       const finalReturn = snappedPathReturn.length > 0 ? snappedPathReturn : waypointsReturn;
       
-      const payload: any = {};
+      const payload: Record<string, unknown> = {};
       
       if (finalOutbound.length > 0) {
         payload.outboundPathGeoJson = {
@@ -152,8 +153,9 @@ export default function RouteEditorMap({ routeId }: RouteEditorMapProps) {
       if (!res.ok) throw new Error('Error al guardar en el servidor');
       
       alert('Rutas guardadas exitosamente');
-    } catch (e: any) {
-      setError(e.message);
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message);
     } finally {
       setIsSaving(false);
     }
