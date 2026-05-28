@@ -32,8 +32,9 @@ export default function LoginPage() {
       const data = await res.json();
       login(data.access_token, data.user);
       toast.success(`Bienvenido de nuevo, ${data.user.name} 👋`);
-    } catch (err: any) {
-      toast.error(err.message || "Error al iniciar sesión");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Error al iniciar sesión";
+      toast.error(errorMessage);
       setIsSubmitting(false); // only toggle if error, success redirects
     }
   };

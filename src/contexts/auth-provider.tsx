@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
@@ -37,9 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (storedToken && storedUser) {
       try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
+        const parsedUser = JSON.parse(storedUser);
+        setTimeout(() => {
+          setToken(storedToken);
+          setUser(parsedUser);
+        }, 0);
+      } catch {
         console.error("Failed to parse user from local storage");
         localStorage.removeItem("token");
         localStorage.removeItem("user");

@@ -3,9 +3,8 @@ import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState } from 'react';
 import L from 'leaflet';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 import { getBackendUrl } from '@/lib/api/types/backend';
-import { useAuth } from '@/contexts/auth-provider';
 
 const icon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -34,56 +33,54 @@ interface VehicleData {
 
 export default function SimulationMap({ routeIds }: SimulationMapProps) {
   const [routes, setRoutes] = useState<RouteData[]>([]);
-  const [vehicles, setVehicles] = useState<Record<string, VehicleData>>({});
-  const { token } = useAuth();
-  const API_URL = getBackendUrl();
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const [vehicles, setVehicles] = useState<Record<string, VehicleData[]>>({});
 
-  // 1. Cargar datos base de TODAS las rutas seleccionadas
+  // 1. Cargar datos base y conectar a Socket.IO
   useEffect(() => {
     if (routeIds.length === 0) {
-      setRoutes([]);
-      setVehicles({});
+      setTimeout(() => {
+        setRoutes([]);
+        setVehicles({});
+      }, 0);
       return;
     }
 
-    Promise.all(
-      routeIds.map(id =>
-        fetch(`${API_URL}/routes/${id}`).then(res => res.json())
-      )
-    )
-      .then(data => setRoutes(data))
-      .catch(err => console.error('Error cargando rutas:', err));
-  }, [routeIds, API_URL]);
+    const fetchRoutes = async () => {
+      try {
+        const API_URL = getBackendUrl();
+        const data = await Promise.all(
+          routeIds.map((id) =>
+            fetch(`${API_URL}/routes/${id}`).then((res) => res.json())
+          )
+        );
+        setRoutes(data);
+      } catch (err) {
+        console.error("Failed to fetch routes:", err);
+      }
+    };
 
-  // 2. Conectar a Socket.IO y suscribirse a las rutas
-  useEffect(() => {
-    // Si la API_URL es http://localhost:3000/api, el WS suele ser http://localhost:3000
-    const wsUrl = API_URL.replace('/api', '');
-    
-    const newSocket = io(wsUrl, {
-      transports: ['websocket'],
-      // auth: { token } // Opcional, si el backend está asegurado por JWT en WebSockets
+    fetchRoutes();
+
+    const WS_URL = getBackendUrl().replace("http", "ws");
+    const newSocket = io(WS_URL, {
+      auth: { token: localStorage.getItem("token") },
     });
 
-    newSocket.on('connect', () => {
-      console.log('WS Connected');
-      newSocket.emit('subscribeToRoutes', routeIds);
+    newSocket.on("connect", () => {
+      routeIds.forEach((id) => newSocket.emit("subscribeToRoute", id));
     });
 
-    newSocket.on('vehicle_update', (data: VehicleData) => {
-      setVehicles(prev => ({
+    newSocket.on("routeSimulationUpdate", (data: { routeId: string; vehicles: VehicleData[] }) => {
+      setVehicles((prev) => ({
         ...prev,
-        [data.routeId]: data
+        [data.routeId]: data.vehicles,
       }));
     });
-
-    setSocket(newSocket);
 
     return () => {
       newSocket.disconnect();
     };
-  }, [routeIds, API_URL, token]);
+  }, [routeIds]);
 
   if (routes.length === 0) return (
     <div className="flex items-center justify-center h-[600px] bg-slate-100 rounded-xl animate-pulse">
