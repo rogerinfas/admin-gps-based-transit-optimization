@@ -222,6 +222,7 @@ export default function RouteEditorMap({ routeId }: RouteEditorMapProps) {
         center={[-16.4350, -71.5150]} 
         zoom={14} 
         style={{ height: '600px', width: '100%' }}
+        preferCanvas={true}
       >
         <TileLayer 
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> & OSRM'
