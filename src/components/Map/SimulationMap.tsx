@@ -3,8 +3,10 @@ import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState } from 'react';
 import L from 'leaflet';
+import { io, Socket } from 'socket.io-client';
+import { getBackendUrl } from '@/lib/api/types/backend';
+import { useAuth } from '@/contexts/auth-provider';
 
-// Fix para los iconos de marcadores en Next.js/Leaflet
 const icon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -13,121 +15,142 @@ const icon = L.icon({
 });
 
 interface SimulationMapProps {
-  routeId: string;
+  routeIds: string[];
 }
 
-import { getBackendUrl } from '@/lib/api/types/backend';
+interface RouteData {
+  id: string;
+  name: string;
+  code: string;
+  outboundPath?: [number, number][];
+  returnPath?: [number, number][];
+}
 
-export default function SimulationMap({ routeId }: SimulationMapProps) {
-  const [route, setRoute] = useState<{ name: string; outboundPath?: [number, number][]; returnPath?: [number, number][] } | null>(null);
-  const [busPos, setBusPos] = useState<[number, number] | null>(null);
-  const [progress, setProgress] = useState(0);
+interface VehicleData {
+  routeId: string;
+  busPos: [number, number];
+  progress: number;
+}
 
+export default function SimulationMap({ routeIds }: SimulationMapProps) {
+  const [routes, setRoutes] = useState<RouteData[]>([]);
+  const [vehicles, setVehicles] = useState<Record<string, VehicleData>>({});
+  const { token } = useAuth();
   const API_URL = getBackendUrl();
+  const [socket, setSocket] = useState<Socket | null>(null);
 
-  // 1. Cargar datos de la ruta al inicio
+  // 1. Cargar datos base de TODAS las rutas seleccionadas
   useEffect(() => {
-    if (!routeId) return;
-    fetch(`${API_URL}/routes/${routeId}`)
-      .then(res => res.json())
-      .then(data => setRoute(data))
-      .catch(err => console.error('Error cargando ruta:', err));
-  }, [routeId, API_URL]);
+    if (routeIds.length === 0) {
+      setRoutes([]);
+      setVehicles({});
+      return;
+    }
 
-  // 2. Bucle de simulación (incrementar progreso)
+    Promise.all(
+      routeIds.map(id =>
+        fetch(`${API_URL}/routes/${id}`).then(res => res.json())
+      )
+    )
+      .then(data => setRoutes(data))
+      .catch(err => console.error('Error cargando rutas:', err));
+  }, [routeIds, API_URL]);
+
+  // 2. Conectar a Socket.IO y suscribirse a las rutas
   useEffect(() => {
-    if (!routeId) return;
-
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        const next = prev + 0.005; // Incremento suave
-        return next > 1 ? 0 : next;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [routeId]);
-
-  // 3. Consultar punto interpolado al Backend cada vez que cambia el progreso
-  useEffect(() => {
-    if (!routeId || progress === null) return;
+    // Si la API_URL es http://localhost:3000/api, el WS suele ser http://localhost:3000
+    const wsUrl = API_URL.replace('/api', '');
     
-    fetch(`${API_URL}/routes/${routeId}/simulate?progress=${progress}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data) && data.length === 2) {
-          // El Backend devuelve [lon, lat], Leaflet espera [lat, lon]
-          setBusPos([data[1], data[0]]);
-        } else {
-          setBusPos(null);
-        }
-      })
-      .catch(err => console.error('Error en simulación:', err));
-  }, [routeId, progress, API_URL]);
+    const newSocket = io(wsUrl, {
+      transports: ['websocket'],
+      // auth: { token } // Opcional, si el backend está asegurado por JWT en WebSockets
+    });
 
-  if (!route) return (
+    newSocket.on('connect', () => {
+      console.log('WS Connected');
+      newSocket.emit('subscribeToRoutes', routeIds);
+    });
+
+    newSocket.on('vehicle_update', (data: VehicleData) => {
+      setVehicles(prev => ({
+        ...prev,
+        [data.routeId]: data
+      }));
+    });
+
+    setSocket(newSocket);
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [routeIds, API_URL, token]);
+
+  if (routes.length === 0) return (
     <div className="flex items-center justify-center h-[600px] bg-slate-100 rounded-xl animate-pulse">
       <p className="text-slate-500 font-medium">Cargando mapa de Arequipa...</p>
     </div>
   );
 
-  const polylinePositionsOutbound = route.outboundPath?.map((c: [number, number]) => [c[1], c[0]]) || [];
-  const polylinePositionsReturn = route.returnPath?.map((c: [number, number]) => [c[1], c[0]]) || [];
-
   return (
     <div className="relative w-full overflow-hidden border border-slate-200 shadow-xl rounded-2xl">
-      <div className="absolute top-4 right-4 z-[1000] bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-md border border-slate-200">
-        <h4 className="text-sm font-bold text-slate-800">{route.name}</h4>
-        <p className="text-xs text-slate-500">Bus: V4K-900 (En tránsito)</p>
-        <div className="mt-2 w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-          <div 
-            className="bg-blue-600 h-full transition-all duration-1000" 
-            style={{ width: `${(progress * 100).toFixed(0)}%` }}
-          />
-        </div>
-      </div>
-
       <MapContainer 
         center={[-16.4350, -71.5150]} 
         zoom={13} 
         style={{ height: '600px', width: '100%' }}
+        preferCanvas={true}
       >
         <TileLayer 
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
         />
         
-        {polylinePositionsOutbound.length > 0 && (
-          <Polyline 
-            positions={polylinePositionsOutbound} 
-            color="#2563eb" 
-            weight={6} 
-            opacity={0.6} 
-            dashArray="1, 10" // Estilo punteado para simular ruta de Ida
-          />
-        )}
+        {/* Render paths for all subscribed routes */}
+        {routes.map((route, i) => {
+          const polylinePositionsOutbound = route.outboundPath?.map((c: [number, number]) => [c[1], c[0]]) || [];
+          const polylinePositionsReturn = route.returnPath?.map((c: [number, number]) => [c[1], c[0]]) || [];
+          const color = `hsl(${(i * 137.5) % 360}, 70%, 50%)`; // Generate distinct colors
+
+          return (
+            <div key={route.id}>
+              {polylinePositionsOutbound.length > 0 && (
+                <Polyline 
+                  positions={polylinePositionsOutbound as [number, number][]} 
+                  color={color} 
+                  weight={5} 
+                  opacity={0.6} 
+                  dashArray="1, 10" 
+                />
+              )}
+              {polylinePositionsReturn.length > 0 && (
+                <Polyline 
+                  positions={polylinePositionsReturn as [number, number][]} 
+                  color={color} 
+                  weight={4} 
+                  opacity={0.4} 
+                  dashArray="5, 10" 
+                />
+              )}
+            </div>
+          );
+        })}
         
-        {polylinePositionsReturn.length > 0 && (
-          <Polyline 
-            positions={polylinePositionsReturn} 
-            color="#ea580c" 
-            weight={6} 
-            opacity={0.6} 
-            dashArray="1, 10" // Estilo punteado para simular ruta de Regreso
-          />
-        )}
-        
-        {busPos && (
-          <Marker position={busPos} icon={icon}>
-            <Popup>
-              <div className="text-center">
-                <span className="font-bold text-blue-600">Bus SIT T1</span><br />
-                Arequipa - Characato<br />
-                <span className="text-[10px] text-slate-400">Progreso: {(progress * 100).toFixed(1)}%</span>
-              </div>
-            </Popup>
-          </Marker>
-        )}
+        {/* Render vehicles for all subscribed routes */}
+        {Object.values(vehicles).map(vehicle => {
+          const route = routes.find(r => r.id === vehicle.routeId);
+          if (!route) return null;
+
+          return (
+            <Marker key={vehicle.routeId} position={vehicle.busPos} icon={icon}>
+              <Popup>
+                <div className="text-center">
+                  <span className="font-bold text-blue-600">Bus {route.name}</span><br />
+                  <span className="text-xs text-slate-500">Ruta: {route.code}</span><br />
+                  <span className="text-[10px] text-slate-400">Progreso: {(vehicle.progress * 100).toFixed(1)}%</span>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
     </div>
   );
