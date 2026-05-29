@@ -1,5 +1,5 @@
 'use client';
-import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState } from 'react';
 import L from 'leaflet';
@@ -17,6 +17,37 @@ const icon = L.divIcon({
   iconSize: [36, 36],
   iconAnchor: [18, 18],
 });
+
+const personIcon = L.divIcon({
+  className: 'custom-person-icon',
+  html: `
+    <div class="relative flex items-center justify-center h-8 w-8 bg-white border border-emerald-500/30 rounded-full shadow-md overflow-hidden">
+      <img src="/assets/person.png" class="h-6 w-6 object-contain" />
+      <span class="absolute inset-0 rounded-full border-2 border-emerald-500 animate-pulse opacity-60"></span>
+    </div>
+  `,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+});
+
+function RecenterController({ 
+  triggerRecenter, 
+  position, 
+  onComplete 
+}: { 
+  triggerRecenter: boolean; 
+  position: [number, number] | null; 
+  onComplete: () => void;
+}) {
+  const map = useMap();
+  useEffect(() => {
+    if (triggerRecenter && position) {
+      map.setView(position, 16);
+      onComplete();
+    }
+  }, [triggerRecenter, position, map, onComplete]);
+  return null;
+}
 
 interface SimulationMapProps {
   routeIds: string[];
@@ -39,8 +70,28 @@ interface VehicleData {
 export default function SimulationMap({ routeIds }: SimulationMapProps) {
   const [routes, setRoutes] = useState<RouteData[]>([]);
   const [vehicles, setVehicles] = useState<Record<string, VehicleData[]>>({});
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [triggerRecenter, setTriggerRecenter] = useState(false);
 
-  // 1. Cargar datos base y conectar a Socket.IO
+  // 1. Monitorear geolocalización del usuario en tiempo real
+  useEffect(() => {
+    if (typeof window !== "undefined" && "geolocation" in navigator) {
+      const watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          setUserLocation([position.coords.latitude, position.coords.longitude]);
+        },
+        (error) => {
+          console.error("Error obteniendo ubicación:", error);
+        },
+        { enableHighAccuracy: true }
+      );
+      return () => {
+        navigator.geolocation.clearWatch(watchId);
+      };
+    }
+  }, []);
+
+  // 2. Cargar datos base y conectar a Socket.IO
   useEffect(() => {
     if (routeIds.length === 0) {
       setTimeout(() => {
@@ -105,6 +156,12 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
         />
+
+        <RecenterController 
+          triggerRecenter={triggerRecenter} 
+          position={userLocation} 
+          onComplete={() => setTriggerRecenter(false)} 
+        />
         
         {/* Render paths for all subscribed routes */}
         {routes.map((route, i) => {
@@ -154,7 +211,30 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
             );
           });
         })}
+
+        {/* Render user's current GPS location */}
+        {userLocation && (
+          <Marker position={userLocation} icon={personIcon}>
+            <Popup>
+              <div className="text-center font-semibold text-xs py-0.5">
+                Tu ubicación actual
+              </div>
+            </Popup>
+          </Marker>
+        )}
       </MapContainer>
+
+      {/* Floating Action Button to Recenter Map on GPS */}
+      {userLocation && (
+        <button
+          type="button"
+          onClick={() => setTriggerRecenter(true)}
+          className="absolute bottom-5 right-5 z-[400] flex h-11 w-11 items-center justify-center rounded-full bg-white border border-black/10 shadow-lg hover:bg-neutral-50 active:scale-95 transition text-black"
+          title="Centrar en mi ubicación"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+        </button>
+      )}
     </div>
   );
 }
