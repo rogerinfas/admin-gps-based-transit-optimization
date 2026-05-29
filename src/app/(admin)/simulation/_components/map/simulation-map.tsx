@@ -286,13 +286,22 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
 
     fetchRoutes();
 
-    const socketUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
-
-    const newSocket = io(socketUrl, {
-      path: "/socket.io",
-      transports: ["polling"], // Forzar polling para pasar consistentemente a través del proxy de Next.js sin mixed content
+    let WS_URL = getBackendUrl().replace("http", "ws");
+    const socketOptions: {
+      auth: { token: string | null };
+      transports?: string[];
+      upgrade?: boolean;
+    } = {
       auth: { token: localStorage.getItem("token") },
-    });
+    };
+
+    if (typeof window !== "undefined" && window.location.hostname === "gps-based-transit-optimization.onlinestornsoftware.win") {
+      WS_URL = "wss://gps-based-transit-optimization.onlinestornsoftware.win";
+      socketOptions.transports = ["websocket"];
+      socketOptions.upgrade = false;
+    }
+
+    const newSocket = io(WS_URL, socketOptions);
 
     newSocket.on("connect", () => {
       newSocket.emit("subscribeToRoutes", routeIds);
