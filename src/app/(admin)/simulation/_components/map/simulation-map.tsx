@@ -224,85 +224,162 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
     toast.success("Ubicación actualizada y bloqueada en el mapa.");
   };
 
-  // Función para obtener la ruta peatonal desde OSRM
-  const fetchWalkingRoute = async (start: [number, number], end: [number, number]): Promise<[number, number][]> => {
-    try {
-      const url = `https://router.project-osrm.org/route/v1/foot/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.routes && data.routes.length > 0) {
-        const coords = data.routes[0].geometry.coordinates; // [[lon, lat], ...]
-        return coords.map((c: [number, number]) => [c[1], c[0]]); // [lat, lon]
-      }
-    } catch (err) {
-      console.error("OSRM Routing error:", err);
-    }
-    // Fallback: Línea recta
-    return [start, end];
-  };
-
-  // 1. Obtener paradero más cercano al cambiar la posición del usuario
+  // 1. Calcular el punto de la ruta más cercano al usuario (Paradero Virtual / Intersección)
+  // y consultar OSRM para obtener la ruta peatonal exacta con distancia y tiempo de caminata real.
   useEffect(() => {
-    if (!userLocation) return;
-    const API_URL = getBackendUrl();
-    const routeId = routeIds[0];
-    let url = `${API_URL}/eta/nearest-stop?lat=${userLocation[0]}&lng=${userLocation[1]}`;
-    if (routeId) {
-      url += `&routeId=${routeId}`;
-    }
-
-    fetch(url)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.stopId) {
-          setNearestStop(data);
-        }
-      })
-      .catch((err) => console.error("Error fetching nearest stop:", err));
-  }, [userLocation, routeIds]);
-
-  // 2. Obtener ETA del bus más cercano al paradero en tiempo real (polling cada 4s)
-  useEffect(() => {
-    if (!nearestStop || routeIds.length === 0) {
-      Promise.resolve().then(() => setBusArrival(null));
+    if (!userLocation || routes.length === 0) {
+      Promise.resolve().then(() => {
+        setNearestStop(null);
+        setConnectionPath([]);
+      });
       return;
     }
-    const API_URL = getBackendUrl();
-    const routeId = routeIds[0];
 
-    const fetchBusArrival = () => {
-      fetch(`${API_URL}/eta/bus-arrival?routeId=${routeId}&stopId=${nearestStop.stopId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data && typeof data.etaSeconds === 'number') {
-            setBusArrival(data);
-          }
-        })
-        .catch((err) => console.error("Error fetching bus arrival ETA:", err));
-    };
+    let bestRoutePoint: [number, number] | null = null;
+    let minDistance = Infinity;
+    let closestIndex = 0;
+    let selectedRoute: RouteData | null = null;
 
-    fetchBusArrival();
-    const interval = setInterval(fetchBusArrival, 4000);
-    return () => clearInterval(interval);
-  }, [nearestStop, routeIds]);
+    routes.forEach((route) => {
+      route.outboundPath?.forEach((c, idx) => {
+        const lat = c[1];
+        const lon = c[0];
+        const dist = Math.pow(lat - userLocation[0], 2) + Math.pow(lon - userLocation[1], 2);
+        if (dist < minDistance) {
+          minDistance = dist;
+          bestRoutePoint = [lat, lon];
+          closestIndex = idx;
+          selectedRoute = route;
+        }
+      });
+    });
 
-  // 3. Calcular y actualizar la ruta peatonal al paradero más cercano
-  useEffect(() => {
-    if (!userLocation || !nearestStop) {
-      Promise.resolve().then(() => setConnectionPath([]));
+    if (!bestRoutePoint || !selectedRoute) {
+      Promise.resolve().then(() => {
+        setNearestStop(null);
+        setConnectionPath([]);
+      });
       return;
     }
 
     const startPoint = userLocation;
-    const endPoint: [number, number] = [nearestStop.latitude, nearestStop.longitude];
+    const endPoint = bestRoutePoint;
+    const route = selectedRoute as RouteData;
 
     const getRoute = async () => {
-      const path = await fetchWalkingRoute(startPoint, endPoint);
-      setConnectionPath(path);
+      try {
+        const url = `https://router.project-osrm.org/route/v1/foot/${startPoint[1]},${startPoint[0]};${endPoint[1]},${endPoint[0]}?overview=full&geometries=geojson`;
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        let distanceMeters = 0;
+        let etaSeconds = 0;
+
+        if (data.routes && data.routes.length > 0) {
+          const osrmRoute = data.routes[0];
+          const coords = osrmRoute.geometry.coordinates; // [[lon, lat], ...]
+          setConnectionPath(coords.map((c: [number, number]) => [c[1], c[0]]));
+          distanceMeters = Math.round(osrmRoute.distance);
+          etaSeconds = Math.round(osrmRoute.duration);
+        } else {
+          setConnectionPath([startPoint, endPoint]);
+          const fallbackDist = L.latLng(startPoint).distanceTo(L.latLng(endPoint));
+          distanceMeters = Math.round(fallbackDist * 1.3);
+          etaSeconds = Math.round(distanceMeters / 1.2);
+        }
+
+        // Determinar el nombre de la calle o punto de encuentro dinámico
+        const name = `Intersección ${route.code} (Punto Peatonal más cercano)`;
+
+        setNearestStop({
+          name,
+          latitude: endPoint[0],
+          longitude: endPoint[1],
+          distanceMeters,
+          etaSeconds,
+        });
+      } catch (err) {
+        console.error("OSRM Pedestrian error:", err);
+        setConnectionPath([startPoint, endPoint]);
+        const fallbackDist = L.latLng(startPoint).distanceTo(L.latLng(endPoint));
+        const distanceMeters = Math.round(fallbackDist * 1.3);
+        const etaSeconds = Math.round(distanceMeters / 1.2);
+
+        setNearestStop({
+          name: `Intersección ${route.code} (Punto Peatonal más cercano)`,
+          latitude: endPoint[0],
+          longitude: endPoint[1],
+          distanceMeters,
+          etaSeconds,
+        });
+      }
     };
 
     getRoute();
-  }, [userLocation, nearestStop]);
+  }, [userLocation, routes, routeIds]);
+
+  // 2. Calcular reactivamente el ETA del bus más cercano a la intersección
+  // Este hook corre en el cliente en base al progreso WebSocket del bus
+  useEffect(() => {
+    if (!nearestStop || routeIds.length === 0 || routes.length === 0) {
+      Promise.resolve().then(() => setBusArrival(null));
+      return;
+    }
+
+    const routeId = routeIds[0];
+    const route = routes.find(r => r.id === routeId);
+    const busGroup = vehicles[routeId];
+
+    if (!route || !busGroup || busGroup.length === 0 || !route.outboundPath) {
+      Promise.resolve().then(() => setBusArrival(null));
+      return;
+    }
+
+    const vehicle = busGroup[0]; // bus en circulación
+    const progress = vehicle.progress;
+
+    // Calcular largo de ruta y distancia del paradero al inicio de forma geodésica
+    const outboundPath = route.outboundPath;
+    let totalLength = 0;
+    for (let i = 0; i < outboundPath.length - 1; i++) {
+      totalLength += L.latLng(outboundPath[i][1], outboundPath[i][0]).distanceTo(
+        L.latLng(outboundPath[i+1][1], outboundPath[i+1][0])
+      );
+    }
+
+    // Encontrar el índice del punto más cercano
+    let closestIndex = 0;
+    let minDistance = Infinity;
+    outboundPath.forEach((c, idx) => {
+      const dist = Math.pow(c[1] - nearestStop.latitude, 2) + Math.pow(c[0] - nearestStop.longitude, 2);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIndex = idx;
+      }
+    });
+
+    let stopDistance = 0;
+    for (let i = 0; i < closestIndex; i++) {
+      stopDistance += L.latLng(outboundPath[i][1], outboundPath[i][0]).distanceTo(
+        L.latLng(outboundPath[i+1][1], outboundPath[i+1][0])
+      );
+    }
+
+    const busDistance = totalLength * progress;
+    let remainingDistance = stopDistance - busDistance;
+
+    if (remainingDistance < 0) {
+      // El bus ya pasó el paradero virtual, calcular para el siguiente ciclo
+      remainingDistance = (totalLength - busDistance) + stopDistance;
+    }
+
+    const busSpeedMps = 25 / 3.6; // 25 km/h
+    const etaSeconds = Math.round(remainingDistance / busSpeedMps);
+
+    Promise.resolve().then(() => {
+      setBusArrival({ etaSeconds });
+    });
+  }, [nearestStop, routeIds, routes, vehicles]);
   // 2. Cargar datos base y conectar a Socket.IO
   useEffect(() => {
     if (routeIds.length === 0) {
@@ -512,10 +589,10 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-footprints"><path d="M4 16v-2.38C4 11.5 5.88 9.85 6 7.07l.02-1.89c.02-.75-.38-1.54-.3-2.29.09-.76.7-1.39 1.48-1.39.8 0 1.25.6 1.27 1.4l.02 1.89c.02.73-.2 1.63-.44 2.37l-.63 2.01A5.62 5.62 0 0 0 7 14.88V16"/><path d="M12 18.5V16c0-2.12 1.88-3.77 2-6.55l.02-1.89c.02-.75-.38-1.54-.3-2.29.09-.76.7-1.39 1.48-1.39.8 0 1.25.6 1.27 1.4l.02 1.89c.02.73-.2 1.63-.44 2.37l-.63 2.01A5.62 5.62 0 0 0 15 17.38V18.5"/><path d="M5 21a2 2 0 0 0 2-2v-.5a2 2 0 0 0-4 0v.5a2 2 0 0 0 2 2Z"/><path d="M13 22.5a2 2 0 0 0 2-2v-.5a2 2 0 0 0-4 0v.5a2 2 0 0 0 2 2Z"/></svg>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Tu paradero más cercano</p>
-                <p className="text-sm font-semibold tracking-tight">{nearestStop.name}</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Intersección de Conexión</p>
+                <p className="text-sm font-semibold tracking-tight">Paradero Virtual Peatonal</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  A {nearestStop.distanceMeters}m ({Math.ceil(nearestStop.etaSeconds / 60)} min caminando)
+                  A {nearestStop.distanceMeters}m ({Math.ceil(nearestStop.etaSeconds / 60)} min de caminata)
                 </p>
               </div>
             </div>
