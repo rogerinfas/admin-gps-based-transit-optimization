@@ -49,8 +49,27 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-[40%_60%] p-0 bg-card">
-      {/* LEFT PANEL — Form */}
+    <div className="relative h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-[60%_40%] p-0 bg-card">
+      {/* LEFT PANEL — Background image */}
+      <div className="relative hidden h-full w-full flex-col lg:flex overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/assets/login-bg.png"
+          alt="Vista aérea de Arequipa con trazados GPS"
+          className="h-full w-full object-cover brightness-90"
+        />
+        {/* Overlay with branding */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-10">
+          <blockquote className="space-y-2">
+            <p className="text-lg font-medium text-white/90">
+              &ldquo;Optimizando el transporte público de Arequipa con tecnología GPS y análisis en tiempo real.&rdquo;
+            </p>
+            <footer className="text-sm text-white/60">Sistema de Gestión de Tránsito — TransiGo</footer>
+          </blockquote>
+        </div>
+      </div>
+
+      {/* RIGHT PANEL — Form */}
       <div className="grid grid-rows-[auto_1fr_auto] h-full p-4 sm:p-6">
         {/* Logo */}
         <div className="relative z-20 flex items-start w-full pt-4 sm:pt-6 px-4 sm:px-6 pb-0">
@@ -168,25 +187,6 @@ export default function LoginPage() {
           <p className="text-sm sm:text-[15px] text-muted-foreground">
             © {new Date().getFullYear()} TransiGo — Sistema de Optimización de Tránsito GPS. Todos los derechos reservados.
           </p>
-        </div>
-      </div>
-
-      {/* RIGHT PANEL — Background image */}
-      <div className="relative hidden h-full w-full flex-col lg:flex overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/assets/login-bg.png"
-          alt="Vista aérea de Arequipa con trazados GPS"
-          className="h-full w-full object-cover brightness-90"
-        />
-        {/* Overlay with branding */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-10">
-          <blockquote className="space-y-2">
-            <p className="text-lg font-medium text-white/90">
-              &ldquo;Optimizando el transporte público de Arequipa con tecnología GPS y análisis en tiempo real.&rdquo;
-            </p>
-            <footer className="text-sm text-white/60">Sistema de Gestión de Tránsito — TransiGo</footer>
-          </blockquote>
         </div>
       </div>
     </div>
