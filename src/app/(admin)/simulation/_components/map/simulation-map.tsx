@@ -83,6 +83,7 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [triggerRecenter, setTriggerRecenter] = useState(false);
   const [hasNotifiedError, setHasNotifiedError] = useState(false);
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
 
   // 1. Monitorear geolocalización del usuario en tiempo real
   useEffect(() => {
@@ -90,11 +91,13 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
       const watchId = navigator.geolocation.watchPosition(
         (position) => {
           setUserLocation([position.coords.latitude, position.coords.longitude]);
+          setIsEditingLocation(false); // Lock automatically when GPS updates
         },
         () => {
           if (!hasNotifiedError) {
             toast.info("No pudimos obtener tu ubicación automáticamente. ¡Puedes hacer clic en cualquier parte del mapa para ubicarte manualmente!");
             setHasNotifiedError(true);
+            setIsEditingLocation(true); // Allow setting manual location if GPS fails
           }
         },
         { enableHighAccuracy: true }
@@ -106,8 +109,10 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
   }, [hasNotifiedError]);
 
   const handleMapClick = (latlng: L.LatLng) => {
+    if (!isEditingLocation && userLocation !== null) return;
     setUserLocation([latlng.lat, latlng.lng]);
-    toast.success("Ubicación establecida manualmente en el mapa.");
+    setIsEditingLocation(false);
+    toast.success("Ubicación actualizada y bloqueada en el mapa.");
   };
 
   // 2. Cargar datos base y conectar a Socket.IO
@@ -165,6 +170,50 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
 
   return (
     <div className="relative w-full overflow-hidden border border-border shadow-xl rounded-2xl">
+      {/* Floating Location Controls (Top-Left) */}
+      <div className="absolute top-4 left-4 z-[400] bg-white dark:bg-card p-3 rounded-xl shadow-lg border border-black/5 flex items-center gap-3">
+        <div className="flex flex-col">
+          <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-none mb-1">Tu Ubicación</span>
+          <span className="text-xs font-semibold text-foreground leading-none">
+            {userLocation ? (isEditingLocation ? "Seleccionando..." : "Establecida y bloqueada") : "Sin establecer"}
+          </span>
+        </div>
+        {userLocation ? (
+          <button
+            type="button"
+            onClick={() => {
+              setIsEditingLocation(true);
+              toast.info("Haz clic en cualquier punto del mapa para cambiar tu ubicación.");
+            }}
+            className="text-xs font-medium px-2.5 py-1 rounded bg-secondary hover:bg-neutral-200 text-foreground transition"
+          >
+            Cambiar
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsEditingLocation(true)}
+            className="text-xs font-semibold px-2.5 py-1 rounded bg-primary text-primary-foreground hover:opacity-90 transition"
+          >
+            Establecer
+          </button>
+        )}
+      </div>
+
+      {/* Edit Mode Active Banner */}
+      {isEditingLocation && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[450] bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg border border-black/10 flex items-center gap-2 animate-pulse">
+          <span className="text-xs font-medium">Modo Edición: Haz clic en el mapa para ubicarte</span>
+          <button
+            type="button"
+            onClick={() => setIsEditingLocation(false)}
+            className="text-[10px] uppercase font-bold bg-white/20 px-2 py-0.5 rounded hover:bg-white/30 transition text-primary-foreground"
+          >
+            Listo
+          </button>
+        </div>
+      )}
+
       <MapContainer 
         center={[-16.4350, -71.5150]} 
         zoom={13} 
