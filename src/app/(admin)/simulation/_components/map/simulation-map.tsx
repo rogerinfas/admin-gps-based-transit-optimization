@@ -1,10 +1,11 @@
 'use client';
-import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState } from 'react';
 import L from 'leaflet';
 import { io } from 'socket.io-client';
 import { getBackendUrl } from '@/lib/api/types/backend';
+import { toast } from 'sonner';
 
 const icon = L.divIcon({
   className: 'custom-bus-icon',
@@ -49,6 +50,15 @@ function RecenterController({
   return null;
 }
 
+function MapClickHandler({ onClick }: { onClick: (latlng: L.LatLng) => void }) {
+  useMapEvents({
+    click(e) {
+      onClick(e.latlng);
+    },
+  });
+  return null;
+}
+
 interface SimulationMapProps {
   routeIds: string[];
 }
@@ -72,6 +82,7 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
   const [vehicles, setVehicles] = useState<Record<string, VehicleData[]>>({});
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [triggerRecenter, setTriggerRecenter] = useState(false);
+  const [hasNotifiedError, setHasNotifiedError] = useState(false);
 
   // 1. Monitorear geolocalización del usuario en tiempo real
   useEffect(() => {
@@ -80,8 +91,11 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
         (position) => {
           setUserLocation([position.coords.latitude, position.coords.longitude]);
         },
-        (error) => {
-          console.error("Error obteniendo ubicación:", error);
+        () => {
+          if (!hasNotifiedError) {
+            toast.info("No pudimos obtener tu ubicación automáticamente. ¡Puedes hacer clic en cualquier parte del mapa para ubicarte manualmente!");
+            setHasNotifiedError(true);
+          }
         },
         { enableHighAccuracy: true }
       );
@@ -89,7 +103,12 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
         navigator.geolocation.clearWatch(watchId);
       };
     }
-  }, []);
+  }, [hasNotifiedError]);
+
+  const handleMapClick = (latlng: L.LatLng) => {
+    setUserLocation([latlng.lat, latlng.lng]);
+    toast.success("Ubicación establecida manualmente en el mapa.");
+  };
 
   // 2. Cargar datos base y conectar a Socket.IO
   useEffect(() => {
@@ -211,6 +230,9 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
             );
           });
         })}
+
+        {/* Map Click Handler for Manual Geolocation */}
+        <MapClickHandler onClick={handleMapClick} />
 
         {/* Render user's current GPS location */}
         {userLocation && (
