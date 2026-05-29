@@ -404,20 +404,26 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
 
     fetchRoutes();
 
-    let WS_URL = getBackendUrl().replace("http", "ws");
+    // En producción (HTTPS), Socket.IO debe conectar al origen de la propia
+    // página para que el rewrite de Next.js (/socket.io → backend) funcione.
+    // Conectar directo al WSS del backend falla porque el navegador rechaza
+    // la conexión cuando no pasa a través del proxy (Traefik → Next.js → NestJS).
+    const isHttps =
+      typeof window !== "undefined" && window.location.protocol === "https:";
+
+    const WS_URL = isHttps
+      ? window.location.origin  // usa el rewrite /socket.io de next.config.ts
+      : getBackendUrl().replace(/^http/, "ws");
+
     const socketOptions: {
       auth: { token: string | null };
-      transports?: string[];
-      upgrade?: boolean;
+      path?: string;
     } = {
       auth: { token: localStorage.getItem("token") },
     };
 
-    if (typeof window !== "undefined" && window.location.hostname === "gps-based-transit-optimization.onlinestornsoftware.win") {
-      WS_URL = "wss://gps-based-transit-optimization.onlinestornsoftware.win";
-      socketOptions.transports = ["websocket"];
-      socketOptions.upgrade = false;
-    }
+    // En producción el path ya queda /socket.io (por el rewrite), no es necesario cambiarlo.
+    // En desarrollo apunta directo al backend NestJS.
 
     const newSocket = io(WS_URL, socketOptions);
 
