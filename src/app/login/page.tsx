@@ -23,8 +23,8 @@ import Logo from "@/components/layout/logo";
 const CONTACT_EMAIL = "soporte@transigo.app";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("admin@gps-transit.com");
-  const [password, setPassword] = useState("Admin123!");
+  const [email, setEmail] = useState("user@gps-transit.com");
+  const [password, setPassword] = useState("User123!");
   const [remember, setRemember] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
