@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import ThemeToggle from "./theme-toggle";
+import Logo from "./logo";
 import { Menu, X, LogOut, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/contexts/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -33,9 +34,7 @@ export default function MainNavbar({ variant = "light" }: MainNavbarProps) {
     >
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-3 md:px-10">
         <div className="flex items-center gap-8">
-          <Link href="/" className="text-xl font-bold tracking-tight">
-            TransiGo
-          </Link>
+          <Logo href="/" />
           <nav className="hidden items-center gap-2 md:flex">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
