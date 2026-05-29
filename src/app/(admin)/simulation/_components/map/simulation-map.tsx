@@ -31,6 +31,18 @@ const personIcon = L.divIcon({
   iconAnchor: [16, 16],
 });
 
+const stopIcon = L.divIcon({
+  className: 'custom-stop-icon',
+  html: `
+    <div class="relative flex items-center justify-center h-8 w-8 bg-emerald-500 border border-white rounded-full shadow-lg overflow-hidden">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span class="absolute inset-0 rounded-full border-2 border-emerald-400 animate-ping opacity-75"></span>
+    </div>
+  `,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+});
+
 function RecenterController({ 
   triggerRecenter, 
   position, 
@@ -467,6 +479,19 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
             opacity={0.8} 
             dashArray="5, 8" 
           />
+        )}
+
+        {/* Render nearest stop intersection marker */}
+        {nearestStop && (
+          <Marker position={[nearestStop.latitude, nearestStop.longitude]} icon={stopIcon}>
+            <Popup>
+              <div className="text-center p-1">
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs">Punto de Conexión (ETA)</span><br />
+                <span className="text-sm font-semibold tracking-tight">{nearestStop.name}</span><br />
+                <span className="text-[10px] text-muted-foreground">Distancia: {nearestStop.distanceMeters}m</span>
+              </div>
+            </Popup>
+          </Marker>
         )}
       </MapContainer>
 
