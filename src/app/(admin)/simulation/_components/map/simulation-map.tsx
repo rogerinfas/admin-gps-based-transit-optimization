@@ -128,7 +128,7 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
 
   // Nuevos estados para ETA
   const [nearestStop, setNearestStop] = useState<{
-    stopId: string;
+    stopId?: string;
     name: string;
     latitude: number;
     longitude: number;
@@ -261,7 +261,7 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
     }
 
     const startPoint = userLocation;
-    const endPoint = bestRoutePoint;
+    const endPoint = bestRoutePoint as [number, number];
     const route = selectedRoute as RouteData;
 
     const getRoute = async () => {
