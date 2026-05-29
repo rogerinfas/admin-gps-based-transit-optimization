@@ -472,7 +472,7 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
 
       {/* Premium Glassmorphism ETA Panel */}
       {nearestStop && (
-        <div className="absolute top-4 left-4 z-[400] max-w-[320px] bg-white/90 dark:bg-black/90 backdrop-blur-md border border-black/10 dark:border-white/10 rounded-2xl p-4 shadow-xl select-none animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="absolute top-4 left-4 z-[9999] max-w-[320px] bg-white/90 dark:bg-black/90 backdrop-blur-md border border-black/10 dark:border-white/10 rounded-2xl p-4 shadow-xl select-none animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex items-center gap-2 mb-3">
             <span className="flex h-2.5 w-2.5 rounded-full bg-primary animate-ping"></span>
             <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
