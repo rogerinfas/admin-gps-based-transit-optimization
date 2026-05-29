@@ -43,14 +43,15 @@ export default function MainNavbar({ variant = "light" }: MainNavbarProps) {
                 <Button
                   key={item.href}
                   variant="ghost"
-                  asChild
+                  render={<Link href={item.href} />}
+                  nativeButton={false}
                   className={
                     isDark
                       ? `transition ${isActive ? "text-white font-semibold" : "text-white/70 hover:text-white hover:bg-white/10"}`
                       : `transition ${isActive ? "text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"}`
                   }
                 >
-                  <Link href={item.href}>{item.label}</Link>
+                  {item.label}
                 </Button>
               );
             })}
@@ -120,13 +121,12 @@ export default function MainNavbar({ variant = "light" }: MainNavbarProps) {
                 <Button
                   key={item.href}
                   variant={isActive ? "secondary" : "ghost"}
-                  asChild
+                  render={<Link href={item.href} />}
+                  nativeButton={false}
                   className="justify-start"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <Link href={item.href}>
-                    {item.label}
-                  </Link>
+                  {item.label}
                 </Button>
               );
             })}

@@ -385,10 +385,8 @@ export default function OperationsDashboard({ data }: Props) {
                         <Button variant="destructive" size="sm" onClick={() => handleDeleteRoute(selectedRoute.id)}>
                           <Trash2 className="h-4 w-4 mr-2" /> Eliminar Ruta
                         </Button>
-                        <Button variant="secondary" size="sm" asChild>
-                          <Link href={`/routes/${selectedRoute.id}/map`}>
-                            <MapPin className="h-4 w-4 mr-2" /> Editar Trayecto
-                          </Link>
+                        <Button variant="secondary" size="sm" render={<Link href={`/routes/${selectedRoute.id}/map`} />} nativeButton={false}>
+                          <MapPin className="h-4 w-4 mr-2" /> Editar Trayecto
                         </Button>
                       </>
                     )}
