@@ -83,13 +83,13 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
   }, [routeIds]);
 
   if (routes.length === 0) return (
-    <div className="flex items-center justify-center h-[600px] bg-slate-100 rounded-xl animate-pulse">
-      <p className="text-slate-500 font-medium">Cargando mapa de Arequipa...</p>
+    <div className="flex items-center justify-center h-[600px] bg-muted rounded-xl animate-pulse">
+      <p className="text-muted-foreground font-medium">Cargando mapa de Arequipa...</p>
     </div>
   );
 
   return (
-    <div className="relative w-full overflow-hidden border border-slate-200 shadow-xl rounded-2xl">
+    <div className="relative w-full overflow-hidden border border-border shadow-xl rounded-2xl">
       <MapContainer 
         center={[-16.4350, -71.5150]} 
         zoom={13} 
@@ -132,21 +132,22 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
         })}
         
         {/* Render vehicles for all subscribed routes */}
-        {Object.values(vehicles).map(vehicle => {
-          const route = routes.find(r => r.id === vehicle.routeId);
-          if (!route) return null;
-
-          return (
-            <Marker key={vehicle.routeId} position={vehicle.busPos} icon={icon}>
-              <Popup>
-                <div className="text-center">
-                  <span className="font-bold text-blue-600">Bus {route.name}</span><br />
-                  <span className="text-xs text-slate-500">Ruta: {route.code}</span><br />
-                  <span className="text-[10px] text-slate-400">Progreso: {(vehicle.progress * 100).toFixed(1)}%</span>
-                </div>
-              </Popup>
-            </Marker>
-          );
+        {Object.values(vehicles).map((vehicleGroup) => {
+          return vehicleGroup.map((vehicle, idx) => {
+             const route = routes.find(r => r.id === vehicle.routeId);
+             if (!route) return null;
+             return (
+              <Marker key={`${vehicle.routeId}-${idx}`} position={vehicle.busPos} icon={icon}>
+                <Popup>
+                  <div className="text-center">
+                    <span className="font-bold text-primary">Bus {route.name}</span><br />
+                    <span className="text-xs text-muted-foreground">Ruta: {route.code}</span><br />
+                    <span className="text-[10px] text-muted-foreground">Progreso: {(vehicle.progress * 100).toFixed(1)}%</span>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          });
         })}
       </MapContainer>
     </div>

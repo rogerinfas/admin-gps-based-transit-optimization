@@ -17,16 +17,26 @@ import {
   useDeleteVehicle,
 } from "../../_hooks/use-operations";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, X, Bus, Route } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Bus, Route, MapPin } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import Link from "next/link";
 
 type Props = {
   data: OperationsDashboardData;
 };
 
-const statusClasses: Record<string, string> = {
-  ACTIVE: "bg-success/15 text-success",
-  INACTIVE: "bg-surface text-muted",
-  MAINTENANCE: "bg-warning/15 text-warning",
+const statusMap: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  ACTIVE: "default",
+  INACTIVE: "secondary",
+  MAINTENANCE: "destructive",
 };
 
 function routeLabel(route: RouteItem): string {
@@ -68,7 +78,7 @@ export default function OperationsDashboard({ data }: Props) {
   const [vehiclePlateNumber, setVehiclePlateNumber] = useState("");
   const [vehicleStatus, setVehicleStatus] = useState<VehicleStatus>("ACTIVE");
   const [vehicleCapacity, setVehicleCapacity] = useState("");
-  const [vehicleRouteId, setVehicleRouteId] = useState<string>("");
+  const [vehicleRouteId, setVehicleRouteId] = useState<string>("none");
 
   const visibleVehicles = useMemo(() => {
     if (selectedRouteId === "all") return data.vehicles;
@@ -178,7 +188,6 @@ export default function OperationsDashboard({ data }: Props) {
       setVehiclePlateNumber("");
       setVehicleStatus("ACTIVE");
       setVehicleCapacity("");
-      // Default to selected route ID if not 'all'
       setVehicleRouteId(selectedRouteId !== "all" ? selectedRouteId : "none");
     }
     setVehicleModalOpen(true);
@@ -239,10 +248,10 @@ export default function OperationsDashboard({ data }: Props) {
     <>
       <section className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">
             Arequipa - Centro de Operaciones
           </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">
             TransiGo Ops Panel
           </h1>
         </div>
@@ -250,393 +259,364 @@ export default function OperationsDashboard({ data }: Props) {
 
       <section className="mt-8 flex flex-col gap-8">
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <article className="rounded-2xl bg-surface-strong p-5 ring-1 ring-foreground/10">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">Rutas Totales</p>
-            <p className="mt-2 text-3xl font-semibold">{data.totals.routes}</p>
-          </article>
-          <article className="rounded-2xl bg-surface-strong p-5 ring-1 ring-foreground/10">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">Rutas Activas</p>
-            <p className="mt-2 text-3xl font-semibold">{data.totals.activeRoutes}</p>
-          </article>
-          <article className="rounded-2xl bg-surface-strong p-5 ring-1 ring-foreground/10">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">Flota Total</p>
-            <p className="mt-2 text-3xl font-semibold">{data.totals.vehicles}</p>
-          </article>
-          <article className="rounded-2xl bg-surface-strong p-5 ring-1 ring-foreground/10">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">Buses Activos</p>
-            <p className="mt-2 text-3xl font-semibold">{data.totals.activeVehicles}</p>
-          </article>
-          <article className="rounded-2xl bg-surface-strong p-5 ring-1 ring-foreground/10">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">En Mantenimiento</p>
-            <p className="mt-2 text-3xl font-semibold">{data.totals.maintenanceVehicles}</p>
-          </article>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Rutas Totales</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{data.totals.routes}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Rutas Activas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{data.totals.activeRoutes}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Flota Total</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{data.totals.vehicles}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Buses Activos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-600">{data.totals.activeVehicles}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">En Mantenimiento</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-red-600">{data.totals.maintenanceVehicles}</div>
+            </CardContent>
+          </Card>
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[380px_1fr]">
           {/* SIDEBAR: RUTAS */}
-          <aside className="rounded-2xl bg-surface-strong p-5 ring-1 ring-foreground/10 h-fit">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Route className="w-5 h-5 text-muted" />
-                Corredores de Ruta
-              </h2>
-              <button
-                type="button"
-                onClick={() => handleOpenRouteModal("create")}
-                className="rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-contrast hover:opacity-90 active:scale-95 transition flex items-center gap-1 cursor-pointer"
-              >
-                <Plus size={14} /> Nueva
-              </button>
-            </div>
-            <p className="mt-1 text-sm text-muted">Flujo estilo despacho Uber para monitoreo por corredor.</p>
-            <div className="mt-4 flex flex-col gap-2">
-              <button
-                type="button"
+          <Card className="h-fit">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Route className="w-5 h-5 text-muted-foreground" />
+                  Corredores de Ruta
+                </CardTitle>
+                <Button size="sm" onClick={() => handleOpenRouteModal("create")} className="h-8 gap-1">
+                  <Plus className="h-4 w-4" /> Nueva
+                </Button>
+              </div>
+              <CardDescription>Flujo estilo despacho para monitoreo por corredor.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              <Button
+                variant={selectedRouteId === "all" ? "default" : "outline"}
+                className="justify-start w-full text-left"
                 onClick={() => setSelectedRouteId("all")}
-                className={`rounded-xl px-3 py-2 text-left text-sm ring-1 ring-foreground/10 transition cursor-pointer ${
-                  selectedRouteId === "all" ? "bg-primary text-primary-contrast" : "bg-surface hover:bg-surface/80"
-                }`}
               >
                 Todas las rutas ({data.routes.length})
-              </button>
+              </Button>
               {data.routes.map((route) => (
-                <button
-                  type="button"
+                <Button
                   key={route.id}
+                  variant={selectedRouteId === route.id ? "default" : "outline"}
+                  className="justify-between w-full h-auto py-3 px-4 relative group"
                   onClick={() => setSelectedRouteId(route.id)}
-                  className={`rounded-xl px-3 py-2 text-left text-sm ring-1 ring-foreground/10 transition cursor-pointer relative group ${
-                    selectedRouteId === route.id ? "bg-primary text-primary-contrast" : "bg-surface hover:bg-surface/80"
-                  }`}
                 >
-                  <p className="font-semibold pr-6">{route.name}</p>
-                  <p className="text-xs opacity-80">{route.code}</p>
+                  <div className="flex flex-col items-start gap-1">
+                    <span className="font-semibold">{route.name}</span>
+                    <span className="text-xs opacity-70 font-mono">{route.code}</span>
+                  </div>
                   {!route.isActive && (
-                    <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-warning" title="Inactiva" />
+                    <Badge variant="destructive" className="ml-2 px-1 py-0 h-4 w-4 rounded-full flex justify-center items-center p-0" title="Inactiva" />
                   )}
-                </button>
+                </Button>
               ))}
-            </div>
-          </aside>
+            </CardContent>
+          </Card>
 
           {/* MAIN CONTENT AREA */}
           <div className="space-y-6">
             {/* ROUTE INFO CARD */}
-            <article className="rounded-2xl bg-surface-strong p-5 ring-1 ring-foreground/10">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-4">
-                  <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                    {selectedRoute?.imageUrl ? (
-                      <img src={selectedRoute.imageUrl} alt={selectedRoute.name} className={`w-16 h-16 rounded-xl object-cover shadow-sm border border-slate-200 transition ${isUploading ? 'opacity-50' : 'group-hover:opacity-80'}`} />
-                    ) : (
-                      <div className={`w-16 h-16 rounded-xl bg-surface flex items-center justify-center border border-dashed border-slate-300 transition ${isUploading ? 'opacity-50' : 'group-hover:bg-slate-100'}`}>
-                        <span className="text-xs text-muted text-center leading-tight px-1">Sin<br/>Foto</span>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-5">
+                    <div className="relative group cursor-pointer shrink-0" onClick={() => fileInputRef.current?.click()}>
+                      {selectedRoute?.imageUrl ? (
+                        <img src={selectedRoute.imageUrl} alt={selectedRoute.name} className={`w-20 h-20 rounded-xl object-cover shadow-sm border border-slate-200 transition ${isUploading ? 'opacity-50' : 'group-hover:opacity-80'}`} />
+                      ) : (
+                        <div className={`w-20 h-20 rounded-xl bg-muted flex items-center justify-center border border-dashed border-slate-300 transition ${isUploading ? 'opacity-50' : 'group-hover:bg-slate-200'}`}>
+                          <span className="text-xs text-muted-foreground text-center leading-tight">Subir<br/>Foto</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                        <span className="text-[10px] font-bold text-white bg-black/60 px-2 py-1 rounded shadow-sm">Editar</span>
                       </div>
-                    )}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                      <span className="text-[10px] font-bold text-white bg-black/60 px-2 py-1 rounded shadow-sm">Editar</span>
                     </div>
-                  </div>
-                  <input type="file" ref={fileInputRef} className="hidden" accept="image/png, image/jpeg, image/webp" onChange={handleImageUpload} />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">Vista Operativa</p>
-                      {selectedRoute && !selectedRoute.isActive && (
-                        <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[10px] font-bold text-warning">INACTIVA</span>
+                    <input type="file" ref={fileInputRef} className="hidden" accept="image/png, image/jpeg, image/webp" onChange={handleImageUpload} />
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="secondary" className="text-[10px] tracking-wider uppercase">Vista Operativa</Badge>
+                        {selectedRoute && !selectedRoute.isActive && (
+                          <Badge variant="destructive" className="text-[10px]">INACTIVA</Badge>
+                        )}
+                      </div>
+                      <h2 className="text-2xl font-bold tracking-tight">{selectedRoute ? routeLabel(selectedRoute) : "Todas las rutas de Arequipa"}</h2>
+                      {selectedRoute?.description && (
+                        <p className="mt-1 text-sm text-muted-foreground">{selectedRoute.description}</p>
                       )}
                     </div>
-                    <h2 className="mt-1 text-xl font-semibold">{selectedRoute ? routeLabel(selectedRoute) : "Todas las rutas de Arequipa"}</h2>
-                    {selectedRoute?.description && (
-                      <p className="mt-1 text-sm text-muted">{selectedRoute.description}</p>
+                  </div>
+                  <div className="flex items-center flex-wrap gap-2">
+                    {selectedRoute && (
+                      <>
+                        <Button variant="outline" size="sm" onClick={() => handleOpenRouteModal("edit", selectedRoute)}>
+                          <Pencil className="h-4 w-4 mr-2" /> Editar Datos
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleDeleteRoute(selectedRoute.id)}>
+                          <Trash2 className="h-4 w-4 mr-2" /> Eliminar Ruta
+                        </Button>
+                        <Button variant="secondary" size="sm" asChild>
+                          <Link href={`/routes/${selectedRoute.id}/map`}>
+                            <MapPin className="h-4 w-4 mr-2" /> Editar Trayecto
+                          </Link>
+                        </Button>
+                      </>
                     )}
+                    <Badge variant="default" className="h-8 px-3">{visibleVehicles.length} buses</Badge>
                   </div>
                 </div>
-                <div className="flex items-center flex-wrap gap-2.5">
-                  {selectedRoute && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenRouteModal("edit", selectedRoute)}
-                        className="rounded-full bg-surface px-4 py-1.5 text-xs font-semibold text-foreground border border-foreground/10 hover:bg-surface/85 transition cursor-pointer"
-                      >
-                        Editar Datos
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteRoute(selectedRoute.id)}
-                        className="rounded-full bg-red-500/10 px-4 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-500/20 transition cursor-pointer"
-                      >
-                        Eliminar Ruta
-                      </button>
-                      <a href={`/routes/${selectedRoute.id}/map`} className="rounded-full bg-blue-100 px-4 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-200">
-                        Editar Trayecto (Mapa)
-                      </a>
-                    </>
-                  )}
-                  <span className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-contrast">{visibleVehicles.length} buses</span>
-                </div>
-              </div>
-            </article>
+              </CardContent>
+            </Card>
 
             {/* VEHICLES SECTION */}
-            <article className="rounded-2xl bg-surface-strong p-5 ring-1 ring-foreground/10">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Bus className="w-5 h-5 text-muted" />
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Bus className="w-5 h-5 text-muted-foreground" />
                   Unidades en Servicio
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => handleOpenVehicleModal("create")}
-                  className="rounded-xl bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-contrast hover:opacity-90 active:scale-95 transition flex items-center gap-1 cursor-pointer"
-                >
-                  <Plus size={14} /> Nueva Unidad
-                </button>
-              </div>
-
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                {visibleVehicles.map((vehicle) => (
-                  <div key={vehicle.id} className="rounded-xl bg-surface p-4 ring-1 ring-foreground/10 flex flex-col justify-between hover:ring-foreground/20 transition duration-150">
-                    <div>
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold flex items-center gap-1.5">
-                          <Bus className="w-4 h-4 text-muted" />
-                          {vehicle.code}
-                        </p>
-                        <span className={`rounded-full px-2.5 py-0.5 text-2xs font-bold uppercase tracking-wider ${statusClasses[vehicle.status]}`}>
-                          {vehicle.status}
-                        </span>
-                      </div>
-                      <p className="mt-2.5 text-sm text-muted">
-                        Placa: <span className="font-medium text-foreground">{vehicle.plateNumber ?? "Sin placa"}</span>
-                      </p>
-                      <p className="mt-1 text-sm text-muted">
-                        Capacidad: <span className="font-medium text-foreground">{vehicle.capacity ?? "-"}</span> pasajeros
-                      </p>
-                      {selectedRouteId === "all" && (
-                        <p className="mt-3 text-2xs text-muted font-medium bg-foreground/5 px-2 py-1 rounded inline-flex items-center gap-1">
-                          <Route className="w-3.5 h-3.5 text-muted" />
-                          Ruta: {data.routes.find((r) => r.id === vehicle.routeId)?.name ?? "Sin asignar"}
-                        </p>
-                      )}
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-foreground/5 flex justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenVehicleModal("edit", vehicle)}
-                        className="rounded-lg bg-surface-strong p-1.5 text-muted hover:text-foreground ring-1 ring-foreground/10 hover:ring-foreground/20 active:scale-95 transition cursor-pointer"
-                        title="Editar Unidad"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteVehicle(vehicle.id)}
-                        className="rounded-lg bg-red-500/10 p-1.5 text-red-500 hover:bg-red-500/20 active:scale-95 transition cursor-pointer"
-                        title="Eliminar Unidad"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {visibleVehicles.length === 0 && (
-                <div className="mt-4 text-center py-8 bg-surface/50 rounded-xl border border-dashed border-foreground/10">
-                  <p className="text-sm text-muted">No hay unidades en servicio en esta vista.</p>
+                </CardTitle>
+                <Button size="sm" onClick={() => handleOpenVehicleModal("create")} className="gap-1">
+                  <Plus className="h-4 w-4" /> Nueva Unidad
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2 mt-4">
+                  {visibleVehicles.map((vehicle) => (
+                    <Card key={vehicle.id} className="bg-muted/30 hover:bg-muted/50 transition">
+                      <CardContent className="p-4 flex flex-col justify-between h-full">
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-3">
+                            <h4 className="font-bold flex items-center gap-1.5 text-lg">
+                              <Bus className="w-4 h-4 text-muted-foreground" />
+                              {vehicle.code}
+                            </h4>
+                            <Badge variant={statusMap[vehicle.status] || "default"}>
+                              {vehicle.status}
+                            </Badge>
+                          </div>
+                          <div className="space-y-1 text-sm text-muted-foreground">
+                            <p>Placa: <span className="font-medium text-foreground">{vehicle.plateNumber ?? "Sin placa"}</span></p>
+                            <p>Capacidad: <span className="font-medium text-foreground">{vehicle.capacity ?? "-"}</span> pasajeros</p>
+                            {selectedRouteId === "all" && (
+                              <p className="mt-2 text-xs font-medium bg-background px-2 py-1 rounded inline-flex items-center gap-1 border">
+                                <Route className="w-3 h-3" />
+                                Ruta: {data.routes.find((r) => r.id === vehicle.routeId)?.name ?? "Sin asignar"}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mt-4 pt-4 border-t flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleOpenVehicleModal("edit", vehicle)} title="Editar Unidad">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteVehicle(vehicle.id)} title="Eliminar Unidad">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-              )}
-            </article>
+                {visibleVehicles.length === 0 && (
+                  <div className="mt-8 text-center py-12 border-2 border-dashed rounded-xl">
+                    <p className="text-muted-foreground font-medium">No hay unidades en servicio en esta vista.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </section>
       </section>
 
       {/* --- ROUTE MODAL --- */}
-      {routeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-surface-strong text-foreground border border-foreground/10 rounded-2xl w-full max-w-md p-6 shadow-xl relative animate-in fade-in zoom-in-95 duration-200">
-            <button
-              onClick={() => setRouteModalOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg text-muted hover:bg-foreground/5 hover:text-foreground transition cursor-pointer"
-            >
-              <X size={18} />
-            </button>
-            <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-              <Route className="w-5 h-5 text-muted" />
+      <Dialog open={routeModalOpen} onOpenChange={setRouteModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Route className="w-5 h-5 text-muted-foreground" />
               {routeModalMode === "create" ? "Nueva Ruta" : "Editar Datos de Ruta"}
-            </h3>
+            </DialogTitle>
+            <DialogDescription>
+              {routeModalMode === "create" ? "Agrega una nueva ruta operativa al sistema." : "Modifica los detalles de esta ruta."}
+            </DialogDescription>
+          </DialogHeader>
 
-            <form onSubmit={handleRouteSubmit} className="space-y-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold tracking-wider text-muted uppercase">Código de Ruta</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej: SIT-T2"
-                  value={routeCode}
-                  onChange={(e) => setRouteCode(e.target.value)}
-                  className="w-full rounded-xl bg-surface px-3.5 py-2 text-sm border border-foreground/10 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
+          <form onSubmit={handleRouteSubmit} className="space-y-5 pt-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase">Código de Ruta</label>
+              <Input
+                required
+                placeholder="Ej: SIT-T2"
+                value={routeCode}
+                onChange={(e) => setRouteCode(e.target.value)}
+              />
+            </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold tracking-wider text-muted uppercase">Nombre</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej: Corredor Azul"
-                  value={routeName}
-                  onChange={(e) => setRouteName(e.target.value)}
-                  className="w-full rounded-xl bg-surface px-3.5 py-2 text-sm border border-foreground/10 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase">Nombre</label>
+              <Input
+                required
+                placeholder="Ej: Corredor Azul"
+                value={routeName}
+                onChange={(e) => setRouteName(e.target.value)}
+              />
+            </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold tracking-wider text-muted uppercase">Descripción</label>
-                <textarea
-                  placeholder="Descripción opcional sobre la ruta"
-                  value={routeDescription}
-                  onChange={(e) => setRouteDescription(e.target.value)}
-                  rows={3}
-                  className="w-full rounded-xl bg-surface px-3.5 py-2 text-sm border border-foreground/10 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-                />
-              </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase">Descripción</label>
+              <Textarea
+                placeholder="Descripción opcional sobre la ruta"
+                value={routeDescription}
+                onChange={(e) => setRouteDescription(e.target.value)}
+                rows={3}
+                className="resize-none"
+              />
+            </div>
 
-              <div className="flex items-center gap-2.5 py-2">
-                <input
-                  type="checkbox"
-                  id="routeIsActive"
-                  checked={routeIsActive}
-                  onChange={(e) => setRouteIsActive(e.target.checked)}
-                  className="w-4 h-4 rounded text-primary focus:ring-primary/20"
-                />
-                <label htmlFor="routeIsActive" className="text-sm font-medium text-foreground select-none cursor-pointer">
-                  Ruta Activa (Habilitada para operaciones)
-                </label>
-              </div>
+            <div className="flex items-center space-x-2 bg-muted/50 p-3 rounded-lg border border-border">
+              <Checkbox
+                id="routeIsActive"
+                checked={routeIsActive}
+                onCheckedChange={(checked) => setRouteIsActive(checked as boolean)}
+              />
+              <label
+                htmlFor="routeIsActive"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Ruta Activa (Habilitada para operaciones)
+              </label>
+            </div>
 
-              <div className="pt-4 flex justify-end gap-3 border-t border-foreground/10">
-                <button
-                  type="button"
-                  onClick={() => setRouteModalOpen(false)}
-                  className="rounded-xl bg-surface px-4 py-2 text-sm font-semibold text-foreground hover:bg-surface/80 active:scale-98 transition cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={createRouteMutation.isPending || updateRouteMutation.isPending}
-                  className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-contrast hover:opacity-90 active:scale-98 transition disabled:opacity-50 cursor-pointer"
-                >
-                  {createRouteMutation.isPending || updateRouteMutation.isPending ? "Guardando..." : "Guardar Ruta"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <div className="flex justify-end gap-3 pt-4 border-t mt-6">
+              <Button type="button" variant="outline" onClick={() => setRouteModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={createRouteMutation.isPending || updateRouteMutation.isPending}>
+                {createRouteMutation.isPending || updateRouteMutation.isPending ? "Guardando..." : "Guardar Ruta"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* --- VEHICLE MODAL --- */}
-      {vehicleModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-surface-strong text-foreground border border-foreground/10 rounded-2xl w-full max-w-md p-6 shadow-xl relative animate-in fade-in zoom-in-95 duration-200">
-            <button
-              onClick={() => setVehicleModalOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg text-muted hover:bg-foreground/5 hover:text-foreground transition cursor-pointer"
-            >
-              <X size={18} />
-            </button>
-            <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-              <Bus className="w-5 h-5 text-muted" />
+      <Dialog open={vehicleModalOpen} onOpenChange={setVehicleModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bus className="w-5 h-5 text-muted-foreground" />
               {vehicleModalMode === "create" ? "Nueva Unidad de Servicio" : "Editar Unidad de Servicio"}
-            </h3>
+            </DialogTitle>
+            <DialogDescription>
+              {vehicleModalMode === "create" ? "Registra un nuevo bus para que preste servicio en las rutas." : "Modifica los datos del vehículo."}
+            </DialogDescription>
+          </DialogHeader>
 
-            <form onSubmit={handleVehicleSubmit} className="space-y-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold tracking-wider text-muted uppercase">Código del Vehículo / Bus</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej: BUS-025"
-                  value={vehicleCode}
-                  onChange={(e) => setVehicleCode(e.target.value)}
-                  className="w-full rounded-xl bg-surface px-3.5 py-2 text-sm border border-foreground/10 focus:outline-none focus:ring-2 focus:ring-primary/20"
+          <form onSubmit={handleVehicleSubmit} className="space-y-5 pt-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase">Código del Vehículo / Bus</label>
+              <Input
+                required
+                placeholder="Ej: BUS-025"
+                value={vehicleCode}
+                onChange={(e) => setVehicleCode(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase">Número de Placa</label>
+              <Input
+                placeholder="Ej: V9G-920"
+                value={vehiclePlateNumber}
+                onChange={(e) => setVehiclePlateNumber(e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase">Estado</label>
+                <Select value={vehicleStatus} onValueChange={(val) => setVehicleStatus(val as VehicleStatus)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIVE">Activo</SelectItem>
+                    <SelectItem value="INACTIVE">Inactivo</SelectItem>
+                    <SelectItem value="MAINTENANCE">Mantenimiento</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase">Capacidad Pasajeros</label>
+                <Input
+                  type="number"
+                  min="1"
+                  placeholder="Ej: 45"
+                  value={vehicleCapacity}
+                  onChange={(e) => setVehicleCapacity(e.target.value)}
                 />
               </div>
+            </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold tracking-wider text-muted uppercase">Número de Placa</label>
-                <input
-                  type="text"
-                  placeholder="Ej: V9G-920"
-                  value={vehiclePlateNumber}
-                  onChange={(e) => setVehiclePlateNumber(e.target.value)}
-                  className="w-full rounded-xl bg-surface px-3.5 py-2 text-sm border border-foreground/10 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold tracking-wider text-muted uppercase">Estado</label>
-                  <select
-                    value={vehicleStatus}
-                    onChange={(e) => setVehicleStatus(e.target.value as VehicleStatus)}
-                    className="w-full rounded-xl bg-surface px-3.5 py-2 text-sm border border-foreground/10 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="ACTIVE">Activo</option>
-                    <option value="INACTIVE">Inactivo</option>
-                    <option value="MAINTENANCE">Mantenimiento</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold tracking-wider text-muted uppercase">Capacidad Pasajeros</label>
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder="Ej: 45"
-                    value={vehicleCapacity}
-                    onChange={(e) => setVehicleCapacity(e.target.value)}
-                    className="w-full rounded-xl bg-surface px-3.5 py-2 text-sm border border-foreground/10 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold tracking-wider text-muted uppercase">Asignar a Ruta</label>
-                <select
-                  value={vehicleRouteId}
-                  onChange={(e) => setVehicleRouteId(e.target.value)}
-                  className="w-full rounded-xl bg-surface px-3.5 py-2 text-sm border border-foreground/10 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="none">Sin asignar / Libre</option>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase">Asignar a Ruta</label>
+              <Select value={vehicleRouteId} onValueChange={(val) => setVehicleRouteId(val)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar ruta" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin asignar / Libre</SelectItem>
                   {data.routes.map((route) => (
-                    <option key={route.id} value={route.id}>
+                    <SelectItem key={route.id} value={route.id}>
                       {routeLabel(route)}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-              </div>
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="pt-4 flex justify-end gap-3 border-t border-foreground/10">
-                <button
-                  type="button"
-                  onClick={() => setVehicleModalOpen(false)}
-                  className="rounded-xl bg-surface px-4 py-2 text-sm font-semibold text-foreground hover:bg-surface/80 active:scale-98 transition cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={createVehicleMutation.isPending || updateVehicleMutation.isPending}
-                  className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-contrast hover:opacity-90 active:scale-98 transition disabled:opacity-50 cursor-pointer"
-                >
-                  {createVehicleMutation.isPending || updateVehicleMutation.isPending ? "Guardando..." : "Guardar Unidad"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <div className="flex justify-end gap-3 pt-4 border-t mt-6">
+              <Button type="button" variant="outline" onClick={() => setVehicleModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={createVehicleMutation.isPending || updateVehicleMutation.isPending}>
+                {createVehicleMutation.isPending || updateVehicleMutation.isPending ? "Guardando..." : "Guardar Unidad"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
