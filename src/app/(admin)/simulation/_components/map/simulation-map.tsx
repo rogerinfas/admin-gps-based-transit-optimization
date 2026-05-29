@@ -7,10 +7,10 @@ import { io } from 'socket.io-client';
 import { getBackendUrl } from '@/lib/api/types/backend';
 
 const icon = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
+  iconUrl: '/assets/logo.png',
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
+  popupAnchor: [0, -18],
 });
 
 interface SimulationMapProps {
@@ -70,10 +70,10 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
       routeIds.forEach((id) => newSocket.emit("subscribeToRoute", id));
     });
 
-    newSocket.on("routeSimulationUpdate", (data: { routeId: string; vehicles: VehicleData[] }) => {
+    newSocket.on("vehicle_update", (data: { routeId: string; busPos: [number, number]; progress: number }) => {
       setVehicles((prev) => ({
         ...prev,
-        [data.routeId]: data.vehicles,
+        [data.routeId]: [data],
       }));
     });
 
