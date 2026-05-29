@@ -237,18 +237,16 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
 
     let bestRoutePoint: [number, number] | null = null;
     let minDistance = Infinity;
-    let closestIndex = 0;
     let selectedRoute: RouteData | null = null;
 
     routes.forEach((route) => {
-      route.outboundPath?.forEach((c, idx) => {
+      route.outboundPath?.forEach((c) => {
         const lat = c[1];
         const lon = c[0];
         const dist = Math.pow(lat - userLocation[0], 2) + Math.pow(lon - userLocation[1], 2);
         if (dist < minDistance) {
           minDistance = dist;
           bestRoutePoint = [lat, lon];
-          closestIndex = idx;
           selectedRoute = route;
         }
       });
