@@ -111,9 +111,16 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
   const [triggerFitBounds, setTriggerFitBounds] = useState(false);
   const [hasNotifiedError, setHasNotifiedError] = useState(false);
   const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [isManual, setIsManual] = useState(false);
+
+  // Validar si las coordenadas están en el rango geográfico aproximado de Arequipa
+  const isNearArequipa = (lat: number, lon: number) => {
+    return lat < -15.5 && lat > -17.2 && lon < -70.8 && lon > -72.2;
+  };
 
   const handleRecenterClick = () => {
-    if (userLocation) {
+    setIsManual(false); // Permitir que el GPS vuelva a actualizar si el usuario lo solicita
+    if (userLocation && isNearArequipa(userLocation[0], userLocation[1])) {
       setTriggerRecenter(true);
     } else {
       if (typeof window !== "undefined" && "geolocation" in navigator) {
@@ -121,9 +128,15 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
           new Promise((resolve, reject) => {
             navigator.geolocation.getCurrentPosition(
               (position) => {
-                setUserLocation([position.coords.latitude, position.coords.longitude]);
-                setTriggerRecenter(true);
-                resolve(position);
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                if (isNearArequipa(lat, lon)) {
+                  setUserLocation([lat, lon]);
+                  setTriggerRecenter(true);
+                  resolve(position);
+                } else {
+                  reject(new Error("Fuera de rango"));
+                }
               },
               (err) => {
                 reject(err);
@@ -133,8 +146,8 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
           }),
           {
             loading: 'Obteniendo tu ubicación satelital...',
-            success: '¡Ubicación encontrada!',
-            error: 'No se pudo obtener la ubicación automáticamente.',
+            success: '¡Ubicación encontrada en Arequipa!',
+            error: 'Ubicación GPS fuera de Arequipa o no disponible. Haz clic en el mapa.',
           }
         );
       }
@@ -146,14 +159,26 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
     if (typeof window !== "undefined" && "geolocation" in navigator) {
       const watchId = navigator.geolocation.watchPosition(
         (position) => {
-          setUserLocation([position.coords.latitude, position.coords.longitude]);
-          setIsEditingLocation(false); // Lock automatically when GPS updates
+          if (isManual) return; // No sobrescribir si el usuario la fijó manualmente
+
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          
+          if (isNearArequipa(lat, lon)) {
+            setUserLocation([lat, lon]);
+            setIsEditingLocation(false);
+          } else if (!hasNotifiedError) {
+            // Si la ubicación GPS por defecto es inválida/mocked fuera de Arequipa
+            toast.info("La señal GPS de tu navegador está fuera de Arequipa. ¡Haz clic en el mapa para ubicarte manualmente!");
+            setHasNotifiedError(true);
+            setIsEditingLocation(true);
+          }
         },
         () => {
           if (!hasNotifiedError) {
             toast.info("No pudimos obtener tu ubicación automáticamente. ¡Puedes hacer clic en cualquier parte del mapa para ubicarte manualmente!");
             setHasNotifiedError(true);
-            setIsEditingLocation(true); // Allow setting manual location if GPS fails
+            setIsEditingLocation(true);
           }
         },
         { enableHighAccuracy: true }
@@ -162,11 +187,12 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
         navigator.geolocation.clearWatch(watchId);
       };
     }
-  }, [hasNotifiedError]);
+  }, [hasNotifiedError, isManual]);
 
   const handleMapClick = (latlng: L.LatLng) => {
     if (!isEditingLocation && userLocation !== null) return;
     setUserLocation([latlng.lat, latlng.lng]);
+    setIsManual(true); // Bloquear futuras sobrescrituras del GPS automático
     setIsEditingLocation(false);
     toast.success("Ubicación actualizada y bloqueada en el mapa.");
   };
