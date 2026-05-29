@@ -112,6 +112,7 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
   const [hasNotifiedError, setHasNotifiedError] = useState(false);
   const [isEditingLocation, setIsEditingLocation] = useState(false);
   const [isManual, setIsManual] = useState(false);
+  const [connectionPath, setConnectionPath] = useState<[number, number][]>([]);
 
   // Validar si las coordenadas están en el rango geográfico aproximado de Arequipa
   const isNearArequipa = (lat: number, lon: number) => {
@@ -196,7 +197,69 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
     setIsEditingLocation(false);
     toast.success("Ubicación actualizada y bloqueada en el mapa.");
   };
+  // Función para obtener la ruta peatonal desde OSRM
+  const fetchWalkingRoute = async (start: [number, number], end: [number, number]): Promise<[number, number][]> => {
+    try {
+      const url = `https://router.project-osrm.org/route/v1/foot/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.routes && data.routes.length > 0) {
+        const coords = data.routes[0].geometry.coordinates; // [[lon, lat], ...]
+        return coords.map((c: [number, number]) => [c[1], c[0]]); // [lat, lon]
+      }
+    } catch (err) {
+      console.error("OSRM Routing error:", err);
+    }
+    // Fallback: Línea recta
+    return [start, end];
+  };
 
+  // Calcular y actualizar la ruta peatonal más cercana
+  useEffect(() => {
+    if (!userLocation || routes.length === 0) {
+      Promise.resolve().then(() => setConnectionPath([]));
+      return;
+    }
+
+    let bestRoutePoint: [number, number] | null = null;
+    let minDistance = Infinity;
+
+    routes.forEach((route) => {
+      route.outboundPath?.forEach((c) => {
+        const lat = c[1];
+        const lon = c[0];
+        const dist = Math.pow(lat - userLocation[0], 2) + Math.pow(lon - userLocation[1], 2);
+        if (dist < minDistance) {
+          minDistance = dist;
+          bestRoutePoint = [lat, lon];
+        }
+      });
+      route.returnPath?.forEach((c) => {
+        const lat = c[1];
+        const lon = c[0];
+        const dist = Math.pow(lat - userLocation[0], 2) + Math.pow(lon - userLocation[1], 2);
+        if (dist < minDistance) {
+          minDistance = dist;
+          bestRoutePoint = [lat, lon];
+        }
+      });
+    });
+
+    if (!bestRoutePoint) {
+      Promise.resolve().then(() => setConnectionPath([]));
+      return;
+    }
+
+    const startPoint = userLocation;
+    const endPoint = bestRoutePoint;
+
+    const getRoute = async () => {
+      const path = await fetchWalkingRoute(startPoint, endPoint);
+      setConnectionPath(path);
+    };
+
+    getRoute();
+  }, [userLocation, routes]);
   // 2. Cargar datos base y conectar a Socket.IO
   useEffect(() => {
     if (routeIds.length === 0) {
@@ -350,6 +413,17 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
               </div>
             </Popup>
           </Marker>
+        )}
+
+        {/* Render connection path from user location to closest route point */}
+        {connectionPath.length > 0 && (
+          <Polyline 
+            positions={connectionPath} 
+            color="#6b6b6b" 
+            weight={4} 
+            opacity={0.8} 
+            dashArray="5, 8" 
+          />
         )}
       </MapContainer>
 
