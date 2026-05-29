@@ -293,7 +293,9 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
 
     const newSocket = io(socketUrl, {
       path: socketPath,
-      transports: ["websocket"], // Evitar polling HTTP de Nginx/Next.js
+      // En producción (relativo), forzar 'polling' para pasar a través de Next.js HTTP rewrites.
+      // En desarrollo (absoluto), usar websocket/polling estándar.
+      transports: isRelative ? ["polling"] : ["websocket", "polling"],
       auth: { token: localStorage.getItem("token") },
     });
 
