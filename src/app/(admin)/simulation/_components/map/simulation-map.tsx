@@ -286,8 +286,14 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
 
     fetchRoutes();
 
-    const WS_URL = getBackendUrl().replace("http", "ws");
-    const newSocket = io(WS_URL, {
+    const rawUrl = getBackendUrl();
+    const isRelative = rawUrl.startsWith("/");
+    const socketUrl = isRelative ? window.location.origin : rawUrl.replace("http", "ws");
+    const socketPath = isRelative ? `${rawUrl}/socket.io` : "/socket.io";
+
+    const newSocket = io(socketUrl, {
+      path: socketPath,
+      transports: ["websocket"], // Evitar polling HTTP de Nginx/Next.js
       auth: { token: localStorage.getItem("token") },
     });
 
