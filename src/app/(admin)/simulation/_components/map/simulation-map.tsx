@@ -3,6 +3,8 @@ import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState } from 'react';
 import L from 'leaflet';
+import { getBackendUrl } from '@/lib/api/types/backend';
+import { Route } from '../../_types/simulation.types';
 
 // Fix para los iconos de marcadores en Next.js/Leaflet
 const icon = L.icon({
@@ -16,10 +18,8 @@ interface SimulationMapProps {
   routeId: string;
 }
 
-import { getBackendUrl } from '@/lib/api/types/backend';
-
 export default function SimulationMap({ routeId }: SimulationMapProps) {
-  const [route, setRoute] = useState<{ name: string; outboundPath?: [number, number][]; returnPath?: [number, number][] } | null>(null);
+  const [route, setRoute] = useState<Route | null>(null);
   const [busPos, setBusPos] = useState<[number, number] | null>(null);
   const [progress, setProgress] = useState(0);
 

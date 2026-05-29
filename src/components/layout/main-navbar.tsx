@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "./theme-toggle";
+import { Button } from "@/components/ui/button";
 
 type MainNavbarProps = {
   variant?: "dark" | "light";
@@ -21,51 +22,50 @@ export default function MainNavbar({ variant = "light" }: MainNavbarProps) {
   return (
     <header
       className={
-        isDark ? "bg-black text-white" : "border-b border-foreground/10 bg-surface-strong"
+        isDark ? "bg-black text-white" : "border-b border-border bg-background"
       }
     >
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-3 md:px-10">
         <div className="flex items-center gap-8">
-          <Link href="/" className="text-xl font-semibold tracking-tight">
+          <Link href="/" className="text-xl font-bold tracking-tight">
             TransiGo
           </Link>
-          <nav className="hidden items-center gap-5 text-sm md:flex">
+          <nav className="hidden items-center gap-2 md:flex">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
-                <Link
+                <Button
                   key={item.href}
-                  href={item.href}
+                  variant="ghost"
+                  asChild
                   className={
                     isDark
-                      ? `transition ${isActive ? "text-white" : "text-white/85 hover:text-white"}`
-                      : `transition ${isActive ? "text-foreground" : "text-muted hover:text-foreground"}`
+                      ? `transition ${isActive ? "text-white" : "text-white/70 hover:text-white hover:bg-white/10"}`
+                      : `transition ${isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`
                   }
                 >
-                  {item.label}
-                </Link>
+                  <Link href={item.href}>{item.label}</Link>
+                </Button>
               );
             })}
           </nav>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <ThemeToggle />
-          <button
+          <Button
+            variant="ghost"
             className={
-              isDark ? "text-sm text-white/90 transition hover:text-white" : "text-sm text-muted transition hover:text-foreground"
+              isDark ? "text-white/90 hover:text-white hover:bg-white/10" : "text-muted-foreground hover:text-foreground"
             }
           >
             Ayuda
-          </button>
-          <button
-            className={
-              isDark
-                ? "rounded-full bg-white px-4 py-1.5 text-sm font-medium text-black transition hover:bg-white/90"
-                : "rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-contrast transition hover:opacity-90"
-            }
+          </Button>
+          <Button
+            variant={isDark ? "secondary" : "default"}
+            asChild
           >
-            Inicia sesion
-          </button>
+            <Link href="/login">Inicia sesión</Link>
+          </Button>
         </div>
       </div>
     </header>
