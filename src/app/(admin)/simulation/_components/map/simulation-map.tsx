@@ -114,6 +114,20 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
   const [isManual, setIsManual] = useState(false);
   const [connectionPath, setConnectionPath] = useState<[number, number][]>([]);
 
+  // Nuevos estados para ETA
+  const [nearestStop, setNearestStop] = useState<{
+    stopId: string;
+    name: string;
+    latitude: number;
+    longitude: number;
+    distanceMeters: number;
+    etaSeconds: number;
+  } | null>(null);
+
+  const [busArrival, setBusArrival] = useState<{
+    etaSeconds: number;
+  } | null>(null);
+
   // Validar si las coordenadas están en el rango geográfico aproximado de Arequipa
   const isNearArequipa = (lat: number, lon: number) => {
     return lat < -15.5 && lat > -17.2 && lon < -70.8 && lon > -72.2;
@@ -197,6 +211,7 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
     setIsEditingLocation(false);
     toast.success("Ubicación actualizada y bloqueada en el mapa.");
   };
+
   // Función para obtener la ruta peatonal desde OSRM
   const fetchWalkingRoute = async (start: [number, number], end: [number, number]): Promise<[number, number][]> => {
     try {
@@ -214,44 +229,60 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
     return [start, end];
   };
 
-  // Calcular y actualizar la ruta peatonal más cercana
+  // 1. Obtener paradero más cercano al cambiar la posición del usuario
   useEffect(() => {
-    if (!userLocation || routes.length === 0) {
-      Promise.resolve().then(() => setConnectionPath([]));
-      return;
+    if (!userLocation) return;
+    const API_URL = getBackendUrl();
+    const routeId = routeIds[0];
+    let url = `${API_URL}/eta/nearest-stop?lat=${userLocation[0]}&lng=${userLocation[1]}`;
+    if (routeId) {
+      url += `&routeId=${routeId}`;
     }
 
-    let bestRoutePoint: [number, number] | null = null;
-    let minDistance = Infinity;
-
-    routes.forEach((route) => {
-      route.outboundPath?.forEach((c) => {
-        const lat = c[1];
-        const lon = c[0];
-        const dist = Math.pow(lat - userLocation[0], 2) + Math.pow(lon - userLocation[1], 2);
-        if (dist < minDistance) {
-          minDistance = dist;
-          bestRoutePoint = [lat, lon];
+    fetch(url)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.stopId) {
+          setNearestStop(data);
         }
-      });
-      route.returnPath?.forEach((c) => {
-        const lat = c[1];
-        const lon = c[0];
-        const dist = Math.pow(lat - userLocation[0], 2) + Math.pow(lon - userLocation[1], 2);
-        if (dist < minDistance) {
-          minDistance = dist;
-          bestRoutePoint = [lat, lon];
-        }
-      });
-    });
+      })
+      .catch((err) => console.error("Error fetching nearest stop:", err));
+  }, [userLocation, routeIds]);
 
-    if (!bestRoutePoint) {
+  // 2. Obtener ETA del bus más cercano al paradero en tiempo real (polling cada 4s)
+  useEffect(() => {
+    if (!nearestStop || routeIds.length === 0) {
+      Promise.resolve().then(() => setBusArrival(null));
+      return;
+    }
+    const API_URL = getBackendUrl();
+    const routeId = routeIds[0];
+
+    const fetchBusArrival = () => {
+      fetch(`${API_URL}/eta/bus-arrival?routeId=${routeId}&stopId=${nearestStop.stopId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && typeof data.etaSeconds === 'number') {
+            setBusArrival(data);
+          }
+        })
+        .catch((err) => console.error("Error fetching bus arrival ETA:", err));
+    };
+
+    fetchBusArrival();
+    const interval = setInterval(fetchBusArrival, 4000);
+    return () => clearInterval(interval);
+  }, [nearestStop, routeIds]);
+
+  // 3. Calcular y actualizar la ruta peatonal al paradero más cercano
+  useEffect(() => {
+    if (!userLocation || !nearestStop) {
       Promise.resolve().then(() => setConnectionPath([]));
       return;
     }
 
     const startPoint = userLocation;
-    const endPoint = bestRoutePoint;
+    const endPoint: [number, number] = [nearestStop.latitude, nearestStop.longitude];
 
     const getRoute = async () => {
       const path = await fetchWalkingRoute(startPoint, endPoint);
@@ -259,7 +290,7 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
     };
 
     getRoute();
-  }, [userLocation, routes]);
+  }, [userLocation, nearestStop]);
   // 2. Cargar datos base y conectar a Socket.IO
   useEffect(() => {
     if (routeIds.length === 0) {
@@ -438,6 +469,62 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
           />
         )}
       </MapContainer>
+
+      {/* Premium Glassmorphism ETA Panel */}
+      {nearestStop && (
+        <div className="absolute top-4 left-4 z-[400] max-w-[320px] bg-white/90 dark:bg-black/90 backdrop-blur-md border border-black/10 dark:border-white/10 rounded-2xl p-4 shadow-xl select-none animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="flex h-2.5 w-2.5 rounded-full bg-primary animate-ping"></span>
+            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+              Panel de Arribo (ETA)
+            </h4>
+          </div>
+
+          <div className="space-y-4">
+            {/* Paradero Peatonal */}
+            <div className="flex gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-footprints"><path d="M4 16v-2.38C4 11.5 5.88 9.85 6 7.07l.02-1.89c.02-.75-.38-1.54-.3-2.29.09-.76.7-1.39 1.48-1.39.8 0 1.25.6 1.27 1.4l.02 1.89c.02.73-.2 1.63-.44 2.37l-.63 2.01A5.62 5.62 0 0 0 7 14.88V16"/><path d="M12 18.5V16c0-2.12 1.88-3.77 2-6.55l.02-1.89c.02-.75-.38-1.54-.3-2.29.09-.76.7-1.39 1.48-1.39.8 0 1.25.6 1.27 1.4l.02 1.89c.02.73-.2 1.63-.44 2.37l-.63 2.01A5.62 5.62 0 0 0 15 17.38V18.5"/><path d="M5 21a2 2 0 0 0 2-2v-.5a2 2 0 0 0-4 0v.5a2 2 0 0 0 2 2Z"/><path d="M13 22.5a2 2 0 0 0 2-2v-.5a2 2 0 0 0-4 0v.5a2 2 0 0 0 2 2Z"/></svg>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Tu paradero más cercano</p>
+                <p className="text-sm font-semibold tracking-tight">{nearestStop.name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  A {nearestStop.distanceMeters}m ({Math.ceil(nearestStop.etaSeconds / 60)} min caminando)
+                </p>
+              </div>
+            </div>
+
+            {/* Bus de Arribo */}
+            <div className="flex gap-3 pt-3 border-t border-border/40">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bus"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h20"/><path d="M26 12v6c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1v-6"/><path d="M6 18H3"/><path d="M21 18h-3"/><path d="M10 22h4"/><path d="M19 22H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2Z"/></svg>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Próximo Bus de Ruta</p>
+                {busArrival ? (
+                  <>
+                    <p className="text-sm font-semibold tracking-tight text-primary">
+                      {busArrival.etaSeconds < 30 ? (
+                        <span className="text-emerald-500 font-bold animate-pulse">¡Llegando al paradero!</span>
+                      ) : (
+                        `Arriba en ${Math.ceil(busArrival.etaSeconds / 60)} min`
+                      )}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      Estimación real basada en telemetría de bus
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic mt-0.5">
+                    Esperando señal del bus...
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Control Group (Bottom-Right) */}
       <div className="absolute bottom-5 right-5 z-[400] flex flex-col gap-2">
