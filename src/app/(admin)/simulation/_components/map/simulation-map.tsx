@@ -286,16 +286,11 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
 
     fetchRoutes();
 
-    const rawUrl = getBackendUrl();
-    const isRelative = rawUrl.startsWith("/");
-    const socketUrl = isRelative ? window.location.origin : rawUrl.replace("http", "ws");
-    const socketPath = isRelative ? `${rawUrl}/socket.io` : "/socket.io";
+    const socketUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
 
     const newSocket = io(socketUrl, {
-      path: socketPath,
-      // En producción (relativo), forzar 'polling' para pasar a través de Next.js HTTP rewrites.
-      // En desarrollo (absoluto), usar websocket/polling estándar.
-      transports: isRelative ? ["polling"] : ["websocket", "polling"],
+      path: "/socket.io",
+      transports: ["polling"], // Forzar polling para pasar consistentemente a través del proxy de Next.js sin mixed content
       auth: { token: localStorage.getItem("token") },
     });
 
