@@ -590,7 +590,7 @@ export default function OperationsDashboard({ data }: Props) {
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-muted-foreground uppercase">Asignar a Ruta</label>
-              <Select value={vehicleRouteId} onValueChange={(val) => setVehicleRouteId(val)}>
+              <Select value={vehicleRouteId ?? "none"} onValueChange={(val) => setVehicleRouteId(val || "none")}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar ruta" />
                 </SelectTrigger>
