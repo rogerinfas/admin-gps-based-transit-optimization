@@ -17,17 +17,18 @@ import {
   useDeleteVehicle,
 } from "../../_hooks/use-operations";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, X, Bus, Route, MapPin } from "lucide-react";
+import { Plus, Pencil, Trash2, Bus, Route, MapPin } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
+import Image from "next/image";
 
 type Props = {
   data: OperationsDashboardData;
@@ -352,7 +353,7 @@ export default function OperationsDashboard({ data }: Props) {
                   <div className="flex items-center gap-5">
                     <div className="relative group cursor-pointer shrink-0" onClick={() => fileInputRef.current?.click()}>
                       {selectedRoute?.imageUrl ? (
-                        <img src={selectedRoute.imageUrl} alt={selectedRoute.name} className={`w-20 h-20 rounded-xl object-cover shadow-sm border border-slate-200 transition ${isUploading ? 'opacity-50' : 'group-hover:opacity-80'}`} />
+                        <Image src={selectedRoute.imageUrl} alt={selectedRoute.name} width={80} height={80} className={`w-20 h-20 rounded-xl object-cover shadow-sm border border-slate-200 transition ${isUploading ? 'opacity-50' : 'group-hover:opacity-80'}`} unoptimized />
                       ) : (
                         <div className={`w-20 h-20 rounded-xl bg-muted flex items-center justify-center border border-dashed border-slate-300 transition ${isUploading ? 'opacity-50' : 'group-hover:bg-slate-200'}`}>
                           <span className="text-xs text-muted-foreground text-center leading-tight">Subir<br/>Foto</span>
@@ -589,7 +590,7 @@ export default function OperationsDashboard({ data }: Props) {
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-muted-foreground uppercase">Asignar a Ruta</label>
-              <Select value={vehicleRouteId} onValueChange={(val) => setVehicleRouteId(val)}>
+              <Select value={vehicleRouteId ?? "none"} onValueChange={(val) => setVehicleRouteId(val || "none")}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar ruta" />
                 </SelectTrigger>
