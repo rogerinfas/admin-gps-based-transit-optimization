@@ -6,11 +6,16 @@ import L from 'leaflet';
 import { io } from 'socket.io-client';
 import { getBackendUrl } from '@/lib/api/types/backend';
 
-const icon = L.icon({
-  iconUrl: '/assets/logo.png',
+const icon = L.divIcon({
+  className: 'custom-bus-icon',
+  html: `
+    <div class="relative flex items-center justify-center h-9 w-9 bg-white border border-primary/20 rounded-full shadow-md overflow-hidden">
+      <img src="/assets/logo.png" class="h-8 w-8 object-contain" />
+      <span class="absolute inset-0 rounded-full border-2 border-primary animate-ping opacity-60"></span>
+    </div>
+  `,
   iconSize: [36, 36],
   iconAnchor: [18, 18],
-  popupAnchor: [0, -18],
 });
 
 interface SimulationMapProps {
@@ -67,7 +72,7 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
     });
 
     newSocket.on("connect", () => {
-      routeIds.forEach((id) => newSocket.emit("subscribeToRoute", id));
+      newSocket.emit("subscribeToRoutes", routeIds);
     });
 
     newSocket.on("vehicle_update", (data: { routeId: string; busPos: [number, number]; progress: number }) => {
