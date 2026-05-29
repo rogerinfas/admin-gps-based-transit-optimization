@@ -50,6 +50,32 @@ function RecenterController({
   return null;
 }
 
+function FitBoundsController({
+  triggerFitBounds,
+  routes,
+  onComplete,
+}: {
+  triggerFitBounds: boolean;
+  routes: RouteData[];
+  onComplete: () => void;
+}) {
+  const map = useMap();
+  useEffect(() => {
+    if (triggerFitBounds && routes.length > 0) {
+      const points: [number, number][] = [];
+      routes.forEach((route) => {
+        route.outboundPath?.forEach((c) => points.push([c[1], c[0]]));
+        route.returnPath?.forEach((c) => points.push([c[1], c[0]]));
+      });
+      if (points.length > 0) {
+        map.fitBounds(points, { padding: [50, 50] });
+      }
+      onComplete();
+    }
+  }, [triggerFitBounds, routes, map, onComplete]);
+  return null;
+}
+
 function MapClickHandler({ onClick }: { onClick: (latlng: L.LatLng) => void }) {
   useMapEvents({
     click(e) {
@@ -82,19 +108,78 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
   const [vehicles, setVehicles] = useState<Record<string, VehicleData[]>>({});
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [triggerRecenter, setTriggerRecenter] = useState(false);
+  const [triggerFitBounds, setTriggerFitBounds] = useState(false);
   const [hasNotifiedError, setHasNotifiedError] = useState(false);
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [isManual, setIsManual] = useState(false);
+  const [connectionPath, setConnectionPath] = useState<[number, number][]>([]);
+
+  // Validar si las coordenadas están en el rango geográfico aproximado de Arequipa
+  const isNearArequipa = (lat: number, lon: number) => {
+    return lat < -15.5 && lat > -17.2 && lon < -70.8 && lon > -72.2;
+  };
+
+  const handleRecenterClick = () => {
+    setIsManual(false); // Permitir que el GPS vuelva a actualizar si el usuario lo solicita
+    if (userLocation && isNearArequipa(userLocation[0], userLocation[1])) {
+      setTriggerRecenter(true);
+    } else {
+      if (typeof window !== "undefined" && "geolocation" in navigator) {
+        toast.promise(
+          new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                if (isNearArequipa(lat, lon)) {
+                  setUserLocation([lat, lon]);
+                  setTriggerRecenter(true);
+                  resolve(position);
+                } else {
+                  reject(new Error("Fuera de rango"));
+                }
+              },
+              (err) => {
+                reject(err);
+              },
+              { enableHighAccuracy: true }
+            );
+          }),
+          {
+            loading: 'Obteniendo tu ubicación satelital...',
+            success: '¡Ubicación encontrada en Arequipa!',
+            error: 'Ubicación GPS fuera de Arequipa o no disponible. Haz clic en el mapa.',
+          }
+        );
+      }
+    }
+  };
 
   // 1. Monitorear geolocalización del usuario en tiempo real
   useEffect(() => {
     if (typeof window !== "undefined" && "geolocation" in navigator) {
       const watchId = navigator.geolocation.watchPosition(
         (position) => {
-          setUserLocation([position.coords.latitude, position.coords.longitude]);
+          if (isManual) return; // No sobrescribir si el usuario la fijó manualmente
+
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          
+          if (isNearArequipa(lat, lon)) {
+            setUserLocation([lat, lon]);
+            setIsEditingLocation(false);
+          } else if (!hasNotifiedError) {
+            // Si la ubicación GPS por defecto es inválida/mocked fuera de Arequipa
+            toast.info("La señal GPS de tu navegador está fuera de Arequipa. ¡Haz clic en el mapa para ubicarte manualmente!");
+            setHasNotifiedError(true);
+            setIsEditingLocation(true);
+          }
         },
         () => {
           if (!hasNotifiedError) {
             toast.info("No pudimos obtener tu ubicación automáticamente. ¡Puedes hacer clic en cualquier parte del mapa para ubicarte manualmente!");
             setHasNotifiedError(true);
+            setIsEditingLocation(true);
           }
         },
         { enableHighAccuracy: true }
@@ -103,13 +188,78 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
         navigator.geolocation.clearWatch(watchId);
       };
     }
-  }, [hasNotifiedError]);
+  }, [hasNotifiedError, isManual]);
 
   const handleMapClick = (latlng: L.LatLng) => {
+    if (!isEditingLocation && userLocation !== null) return;
     setUserLocation([latlng.lat, latlng.lng]);
-    toast.success("Ubicación establecida manualmente en el mapa.");
+    setIsManual(true); // Bloquear futuras sobrescrituras del GPS automático
+    setIsEditingLocation(false);
+    toast.success("Ubicación actualizada y bloqueada en el mapa.");
+  };
+  // Función para obtener la ruta peatonal desde OSRM
+  const fetchWalkingRoute = async (start: [number, number], end: [number, number]): Promise<[number, number][]> => {
+    try {
+      const url = `https://router.project-osrm.org/route/v1/foot/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.routes && data.routes.length > 0) {
+        const coords = data.routes[0].geometry.coordinates; // [[lon, lat], ...]
+        return coords.map((c: [number, number]) => [c[1], c[0]]); // [lat, lon]
+      }
+    } catch (err) {
+      console.error("OSRM Routing error:", err);
+    }
+    // Fallback: Línea recta
+    return [start, end];
   };
 
+  // Calcular y actualizar la ruta peatonal más cercana
+  useEffect(() => {
+    if (!userLocation || routes.length === 0) {
+      Promise.resolve().then(() => setConnectionPath([]));
+      return;
+    }
+
+    let bestRoutePoint: [number, number] | null = null;
+    let minDistance = Infinity;
+
+    routes.forEach((route) => {
+      route.outboundPath?.forEach((c) => {
+        const lat = c[1];
+        const lon = c[0];
+        const dist = Math.pow(lat - userLocation[0], 2) + Math.pow(lon - userLocation[1], 2);
+        if (dist < minDistance) {
+          minDistance = dist;
+          bestRoutePoint = [lat, lon];
+        }
+      });
+      route.returnPath?.forEach((c) => {
+        const lat = c[1];
+        const lon = c[0];
+        const dist = Math.pow(lat - userLocation[0], 2) + Math.pow(lon - userLocation[1], 2);
+        if (dist < minDistance) {
+          minDistance = dist;
+          bestRoutePoint = [lat, lon];
+        }
+      });
+    });
+
+    if (!bestRoutePoint) {
+      Promise.resolve().then(() => setConnectionPath([]));
+      return;
+    }
+
+    const startPoint = userLocation;
+    const endPoint = bestRoutePoint;
+
+    const getRoute = async () => {
+      const path = await fetchWalkingRoute(startPoint, endPoint);
+      setConnectionPath(path);
+    };
+
+    getRoute();
+  }, [userLocation, routes]);
   // 2. Cargar datos base y conectar a Socket.IO
   useEffect(() => {
     if (routeIds.length === 0) {
@@ -165,6 +315,20 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
 
   return (
     <div className="relative w-full overflow-hidden border border-border shadow-xl rounded-2xl">
+      {/* Edit Mode Active Banner */}
+      {isEditingLocation && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[450] bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg border border-black/10 flex items-center gap-2 animate-pulse">
+          <span className="text-xs font-medium">Modo Edición: Haz clic en el mapa para ubicarte</span>
+          <button
+            type="button"
+            onClick={() => setIsEditingLocation(false)}
+            className="text-[10px] uppercase font-bold bg-white/20 px-2 py-0.5 rounded hover:bg-white/30 transition text-primary-foreground"
+          >
+            Listo
+          </button>
+        </div>
+      )}
+
       <MapContainer 
         center={[-16.4350, -71.5150]} 
         zoom={13} 
@@ -180,6 +344,12 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
           triggerRecenter={triggerRecenter} 
           position={userLocation} 
           onComplete={() => setTriggerRecenter(false)} 
+        />
+
+        <FitBoundsController
+          triggerFitBounds={triggerFitBounds}
+          routes={routes}
+          onComplete={() => setTriggerFitBounds(false)}
         />
         
         {/* Render paths for all subscribed routes */}
@@ -244,19 +414,46 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
             </Popup>
           </Marker>
         )}
+
+        {/* Render connection path from user location to closest route point */}
+        {connectionPath.length > 0 && (
+          <Polyline 
+            positions={connectionPath} 
+            color="#6b6b6b" 
+            weight={4} 
+            opacity={0.8} 
+            dashArray="5, 8" 
+          />
+        )}
       </MapContainer>
 
-      {/* Floating Action Button to Recenter Map on GPS */}
-      {userLocation && (
+      {/* Floating Control Group (Bottom-Right) */}
+      <div className="absolute bottom-5 right-5 z-[400] flex flex-col gap-2">
+        {/* Toggle Edit Location Mode */}
         <button
           type="button"
-          onClick={() => setTriggerRecenter(true)}
-          className="absolute bottom-5 right-5 z-[400] flex h-11 w-11 items-center justify-center rounded-full bg-white border border-black/10 shadow-lg hover:bg-neutral-50 active:scale-95 transition text-black"
+          onClick={() => {
+            setIsEditingLocation((prev) => !prev);
+            if (!isEditingLocation) {
+              toast.info("Modo Edición: Haz clic en cualquier parte del mapa para ubicarte.");
+            }
+          }}
+          className={`flex h-11 w-11 items-center justify-center rounded-full border shadow-lg active:scale-95 transition ${isEditingLocation ? 'bg-primary text-primary-foreground border-primary' : 'bg-white text-black border-black/10 hover:bg-neutral-50'}`}
+          title="Cambiar mi ubicación en el mapa"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
+
+        {/* Recenter on GPS */}
+        <button
+          type="button"
+          onClick={handleRecenterClick}
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-black/10 shadow-lg hover:bg-neutral-50 active:scale-95 transition text-black"
           title="Centrar en mi ubicación"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
         </button>
-      )}
+      </div>
     </div>
   );
 }
