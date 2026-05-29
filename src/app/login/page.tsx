@@ -71,8 +71,8 @@ export default function LoginPage() {
 
       {/* RIGHT PANEL — Form */}
       <div className="grid grid-rows-[auto_1fr_auto] h-full p-4 sm:p-6">
-        {/* Logo */}
-        <div className="relative z-20 flex items-start w-full pt-4 sm:pt-6 px-4 sm:px-6 pb-0">
+        {/* Logo + Back to home */}
+        <div className="relative z-20 flex items-center justify-between w-full pt-4 sm:pt-6 px-4 sm:px-6 pb-0">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-foreground">
               <svg viewBox="0 0 24 24" className="h-5 w-5 text-background fill-current" xmlns="http://www.w3.org/2000/svg">
@@ -81,6 +81,15 @@ export default function LoginPage() {
             </div>
             <span className="text-xl font-bold tracking-tight text-foreground">TransiGo</span>
           </div>
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current stroke-2" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+            Volver al inicio
+          </Link>
         </div>
 
         {/* Center Card */}
