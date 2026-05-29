@@ -50,6 +50,32 @@ function RecenterController({
   return null;
 }
 
+function FitBoundsController({
+  triggerFitBounds,
+  routes,
+  onComplete,
+}: {
+  triggerFitBounds: boolean;
+  routes: RouteData[];
+  onComplete: () => void;
+}) {
+  const map = useMap();
+  useEffect(() => {
+    if (triggerFitBounds && routes.length > 0) {
+      const points: [number, number][] = [];
+      routes.forEach((route) => {
+        route.outboundPath?.forEach((c) => points.push([c[1], c[0]]));
+        route.returnPath?.forEach((c) => points.push([c[1], c[0]]));
+      });
+      if (points.length > 0) {
+        map.fitBounds(points, { padding: [50, 50] });
+      }
+      onComplete();
+    }
+  }, [triggerFitBounds, routes, map, onComplete]);
+  return null;
+}
+
 function MapClickHandler({ onClick }: { onClick: (latlng: L.LatLng) => void }) {
   useMapEvents({
     click(e) {
@@ -82,8 +108,38 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
   const [vehicles, setVehicles] = useState<Record<string, VehicleData[]>>({});
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [triggerRecenter, setTriggerRecenter] = useState(false);
+  const [triggerFitBounds, setTriggerFitBounds] = useState(false);
   const [hasNotifiedError, setHasNotifiedError] = useState(false);
   const [isEditingLocation, setIsEditingLocation] = useState(false);
+
+  const handleRecenterClick = () => {
+    if (userLocation) {
+      setTriggerRecenter(true);
+    } else {
+      if (typeof window !== "undefined" && "geolocation" in navigator) {
+        toast.promise(
+          new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                setUserLocation([position.coords.latitude, position.coords.longitude]);
+                setTriggerRecenter(true);
+                resolve(position);
+              },
+              (err) => {
+                reject(err);
+              },
+              { enableHighAccuracy: true }
+            );
+          }),
+          {
+            loading: 'Obteniendo tu ubicación satelital...',
+            success: '¡Ubicación encontrada!',
+            error: 'No se pudo obtener la ubicación automáticamente.',
+          }
+        );
+      }
+    }
+  };
 
   // 1. Monitorear geolocalización del usuario en tiempo real
   useEffect(() => {
@@ -230,6 +286,12 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
           position={userLocation} 
           onComplete={() => setTriggerRecenter(false)} 
         />
+
+        <FitBoundsController
+          triggerFitBounds={triggerFitBounds}
+          routes={routes}
+          onComplete={() => setTriggerFitBounds(false)}
+        />
         
         {/* Render paths for all subscribed routes */}
         {routes.map((route, i) => {
@@ -295,17 +357,28 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
         )}
       </MapContainer>
 
-      {/* Floating Action Button to Recenter Map on GPS */}
-      {userLocation && (
+      {/* Floating Control Group (Bottom-Right) */}
+      <div className="absolute bottom-5 right-5 z-[400] flex flex-col gap-2">
+        {/* Fit Bounds to Routes / Buses */}
         <button
           type="button"
-          onClick={() => setTriggerRecenter(true)}
-          className="absolute bottom-5 right-5 z-[400] flex h-11 w-11 items-center justify-center rounded-full bg-white border border-black/10 shadow-lg hover:bg-neutral-50 active:scale-95 transition text-black"
+          onClick={() => setTriggerFitBounds(true)}
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-black/10 shadow-lg hover:bg-neutral-50 active:scale-95 transition text-black"
+          title="Ver todas las rutas y buses"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </button>
+
+        {/* Recenter on GPS */}
+        <button
+          type="button"
+          onClick={handleRecenterClick}
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-black/10 shadow-lg hover:bg-neutral-50 active:scale-95 transition text-black"
           title="Centrar en mi ubicación"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
         </button>
-      )}
+      </div>
     </div>
   );
 }
