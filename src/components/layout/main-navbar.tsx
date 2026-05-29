@@ -34,7 +34,7 @@ export default function MainNavbar({ variant = "light" }: MainNavbarProps) {
     >
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-3 md:px-10">
         <div className="flex items-center gap-8">
-          <Logo href="/" />
+          <Logo href="/" textColor={isDark ? "light" : "auto"} />
           <nav className="hidden items-center gap-2 md:flex">
             {navItems.map((item) => {
               const isActive = pathname === item.href;

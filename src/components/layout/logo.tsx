@@ -8,12 +8,30 @@ type LogoProps = {
   iconOnly?: boolean;
   /** Envuelve el logo en un Link hacia "/" */
   href?: string;
+  /**
+   * Fuerza el color del texto:
+   * - "auto" (default): hereda del contexto (text-foreground)
+   * - "light": texto blanco (para usar sobre fondos oscuros)
+   * - "dark": texto negro (para usar sobre fondos claros)
+   */
+  textColor?: "auto" | "light" | "dark";
 };
 
-function LogoContent({ className, iconOnly }: Pick<LogoProps, "className" | "iconOnly">) {
+const textColorClass = {
+  auto: "text-foreground",
+  light: "text-white",
+  dark: "text-[#141414]",
+};
+
+function LogoContent({
+  className,
+  iconOnly,
+  textColor = "auto",
+}: Pick<LogoProps, "className" | "iconOnly" | "textColor">) {
   return (
     <div className={cn("flex items-center gap-2.5 shrink-0", className)}>
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-foreground overflow-hidden p-0.5">
+      {/* Fondo SIEMPRE blanco para que el bus (gris) sea visible en cualquier tema */}
+      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white overflow-hidden shadow-sm border border-black/[0.06]">
         <Image
           src="/assets/logo.png"
           alt="TransiGo Logo"
@@ -24,7 +42,12 @@ function LogoContent({ className, iconOnly }: Pick<LogoProps, "className" | "ico
         />
       </div>
       {!iconOnly && (
-        <span className="text-xl font-bold tracking-tight text-foreground select-none">
+        <span
+          className={cn(
+            "text-xl font-bold tracking-tight select-none",
+            textColorClass[textColor]
+          )}
+        >
           TransiGo
         </span>
       )}
@@ -32,13 +55,21 @@ function LogoContent({ className, iconOnly }: Pick<LogoProps, "className" | "ico
   );
 }
 
-export default function Logo({ className, iconOnly = false, href }: LogoProps) {
+export default function Logo({
+  className,
+  iconOnly = false,
+  href,
+  textColor = "auto",
+}: LogoProps) {
   if (href !== undefined) {
     return (
-      <Link href={href} className="outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
-        <LogoContent className={className} iconOnly={iconOnly} />
+      <Link
+        href={href}
+        className="outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
+      >
+        <LogoContent className={className} iconOnly={iconOnly} textColor={textColor} />
       </Link>
     );
   }
-  return <LogoContent className={className} iconOnly={iconOnly} />;
+  return <LogoContent className={className} iconOnly={iconOnly} textColor={textColor} />;
 }
