@@ -31,6 +31,18 @@ const personIcon = L.divIcon({
   iconAnchor: [16, 16],
 });
 
+const stopIcon = L.divIcon({
+  className: 'custom-stop-icon',
+  html: `
+    <div class="relative flex items-center justify-center h-8 w-8 bg-emerald-500 border border-white rounded-full shadow-lg overflow-hidden">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span class="absolute inset-0 rounded-full border-2 border-emerald-400 animate-ping opacity-75"></span>
+    </div>
+  `,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+});
+
 function RecenterController({ 
   triggerRecenter, 
   position, 
@@ -113,6 +125,20 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
   const [isEditingLocation, setIsEditingLocation] = useState(false);
   const [isManual, setIsManual] = useState(false);
   const [connectionPath, setConnectionPath] = useState<[number, number][]>([]);
+
+  // Nuevos estados para ETA
+  const [nearestStop, setNearestStop] = useState<{
+    stopId?: string;
+    name: string;
+    latitude: number;
+    longitude: number;
+    distanceMeters: number;
+    etaSeconds: number;
+  } | null>(null);
+
+  const [busArrival, setBusArrival] = useState<{
+    etaSeconds: number;
+  } | null>(null);
 
   // Validar si las coordenadas están en el rango geográfico aproximado de Arequipa
   const isNearArequipa = (lat: number, lon: number) => {
@@ -197,32 +223,21 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
     setIsEditingLocation(false);
     toast.success("Ubicación actualizada y bloqueada en el mapa.");
   };
-  // Función para obtener la ruta peatonal desde OSRM
-  const fetchWalkingRoute = async (start: [number, number], end: [number, number]): Promise<[number, number][]> => {
-    try {
-      const url = `https://router.project-osrm.org/route/v1/foot/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.routes && data.routes.length > 0) {
-        const coords = data.routes[0].geometry.coordinates; // [[lon, lat], ...]
-        return coords.map((c: [number, number]) => [c[1], c[0]]); // [lat, lon]
-      }
-    } catch (err) {
-      console.error("OSRM Routing error:", err);
-    }
-    // Fallback: Línea recta
-    return [start, end];
-  };
 
-  // Calcular y actualizar la ruta peatonal más cercana
+  // 1. Calcular el punto de la ruta más cercano al usuario (Paradero Virtual / Intersección)
+  // y consultar OSRM para obtener la ruta peatonal exacta con distancia y tiempo de caminata real.
   useEffect(() => {
     if (!userLocation || routes.length === 0) {
-      Promise.resolve().then(() => setConnectionPath([]));
+      Promise.resolve().then(() => {
+        setNearestStop(null);
+        setConnectionPath([]);
+      });
       return;
     }
 
     let bestRoutePoint: [number, number] | null = null;
     let minDistance = Infinity;
+    let selectedRoute: RouteData | null = null;
 
     routes.forEach((route) => {
       route.outboundPath?.forEach((c) => {
@@ -232,34 +247,137 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
         if (dist < minDistance) {
           minDistance = dist;
           bestRoutePoint = [lat, lon];
-        }
-      });
-      route.returnPath?.forEach((c) => {
-        const lat = c[1];
-        const lon = c[0];
-        const dist = Math.pow(lat - userLocation[0], 2) + Math.pow(lon - userLocation[1], 2);
-        if (dist < minDistance) {
-          minDistance = dist;
-          bestRoutePoint = [lat, lon];
+          selectedRoute = route;
         }
       });
     });
 
-    if (!bestRoutePoint) {
-      Promise.resolve().then(() => setConnectionPath([]));
+    if (!bestRoutePoint || !selectedRoute) {
+      Promise.resolve().then(() => {
+        setNearestStop(null);
+        setConnectionPath([]);
+      });
       return;
     }
 
     const startPoint = userLocation;
-    const endPoint = bestRoutePoint;
+    const endPoint = bestRoutePoint as [number, number];
+    const route = selectedRoute as RouteData;
 
     const getRoute = async () => {
-      const path = await fetchWalkingRoute(startPoint, endPoint);
-      setConnectionPath(path);
+      try {
+        const url = `https://router.project-osrm.org/route/v1/foot/${startPoint[1]},${startPoint[0]};${endPoint[1]},${endPoint[0]}?overview=full&geometries=geojson`;
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        let distanceMeters = 0;
+        let etaSeconds = 0;
+
+        if (data.routes && data.routes.length > 0) {
+          const osrmRoute = data.routes[0];
+          const coords = osrmRoute.geometry.coordinates; // [[lon, lat], ...]
+          setConnectionPath(coords.map((c: [number, number]) => [c[1], c[0]]));
+          distanceMeters = Math.round(osrmRoute.distance);
+          etaSeconds = Math.round(osrmRoute.duration);
+        } else {
+          setConnectionPath([startPoint, endPoint]);
+          const fallbackDist = L.latLng(startPoint).distanceTo(L.latLng(endPoint));
+          distanceMeters = Math.round(fallbackDist * 1.3);
+          etaSeconds = Math.round(distanceMeters / 1.2);
+        }
+
+        // Determinar el nombre de la calle o punto de encuentro dinámico
+        const name = `Intersección ${route.code} (Punto Peatonal más cercano)`;
+
+        setNearestStop({
+          name,
+          latitude: endPoint[0],
+          longitude: endPoint[1],
+          distanceMeters,
+          etaSeconds,
+        });
+      } catch (err) {
+        console.error("OSRM Pedestrian error:", err);
+        setConnectionPath([startPoint, endPoint]);
+        const fallbackDist = L.latLng(startPoint).distanceTo(L.latLng(endPoint));
+        const distanceMeters = Math.round(fallbackDist * 1.3);
+        const etaSeconds = Math.round(distanceMeters / 1.2);
+
+        setNearestStop({
+          name: `Intersección ${route.code} (Punto Peatonal más cercano)`,
+          latitude: endPoint[0],
+          longitude: endPoint[1],
+          distanceMeters,
+          etaSeconds,
+        });
+      }
     };
 
     getRoute();
-  }, [userLocation, routes]);
+  }, [userLocation, routes, routeIds]);
+
+  // 2. Calcular reactivamente el ETA del bus más cercano a la intersección
+  // Este hook corre en el cliente en base al progreso WebSocket del bus
+  useEffect(() => {
+    if (!nearestStop || routeIds.length === 0 || routes.length === 0) {
+      Promise.resolve().then(() => setBusArrival(null));
+      return;
+    }
+
+    const routeId = routeIds[0];
+    const route = routes.find(r => r.id === routeId);
+    const busGroup = vehicles[routeId];
+
+    if (!route || !busGroup || busGroup.length === 0 || !route.outboundPath) {
+      Promise.resolve().then(() => setBusArrival(null));
+      return;
+    }
+
+    const vehicle = busGroup[0]; // bus en circulación
+    const progress = vehicle.progress;
+
+    // Calcular largo de ruta y distancia del paradero al inicio de forma geodésica
+    const outboundPath = route.outboundPath;
+    let totalLength = 0;
+    for (let i = 0; i < outboundPath.length - 1; i++) {
+      totalLength += L.latLng(outboundPath[i][1], outboundPath[i][0]).distanceTo(
+        L.latLng(outboundPath[i+1][1], outboundPath[i+1][0])
+      );
+    }
+
+    // Encontrar el índice del punto más cercano
+    let closestIndex = 0;
+    let minDistance = Infinity;
+    outboundPath.forEach((c, idx) => {
+      const dist = Math.pow(c[1] - nearestStop.latitude, 2) + Math.pow(c[0] - nearestStop.longitude, 2);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIndex = idx;
+      }
+    });
+
+    let stopDistance = 0;
+    for (let i = 0; i < closestIndex; i++) {
+      stopDistance += L.latLng(outboundPath[i][1], outboundPath[i][0]).distanceTo(
+        L.latLng(outboundPath[i+1][1], outboundPath[i+1][0])
+      );
+    }
+
+    const busDistance = totalLength * progress;
+    let remainingDistance = stopDistance - busDistance;
+
+    if (remainingDistance < 0) {
+      // El bus ya pasó el paradero virtual, calcular para el siguiente ciclo
+      remainingDistance = (totalLength - busDistance) + stopDistance;
+    }
+
+    const busSpeedMps = 25 / 3.6; // 25 km/h
+    const etaSeconds = Math.round(remainingDistance / busSpeedMps);
+
+    Promise.resolve().then(() => {
+      setBusArrival({ etaSeconds });
+    });
+  }, [nearestStop, routeIds, routes, vehicles]);
   // 2. Cargar datos base y conectar a Socket.IO
   useEffect(() => {
     if (routeIds.length === 0) {
@@ -437,7 +555,76 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
             dashArray="5, 8" 
           />
         )}
+
+        {/* Render nearest stop intersection marker */}
+        {nearestStop && (
+          <Marker position={[nearestStop.latitude, nearestStop.longitude]} icon={stopIcon}>
+            <Popup>
+              <div className="text-center p-1">
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs">Punto de Conexión (ETA)</span><br />
+                <span className="text-sm font-semibold tracking-tight">{nearestStop.name}</span><br />
+                <span className="text-[10px] text-muted-foreground">Distancia: {nearestStop.distanceMeters}m</span>
+              </div>
+            </Popup>
+          </Marker>
+        )}
       </MapContainer>
+
+      {/* Premium Glassmorphism ETA Panel */}
+      {nearestStop && (
+        <div className="absolute top-4 right-4 z-[9999] max-w-[320px] bg-white/90 dark:bg-black/90 backdrop-blur-md border border-black/10 dark:border-white/10 rounded-2xl p-4 shadow-xl select-none animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="flex h-2.5 w-2.5 rounded-full bg-primary animate-ping"></span>
+            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+              Panel de Arribo (ETA)
+            </h4>
+          </div>
+
+          <div className="space-y-4">
+            {/* Paradero Peatonal */}
+            <div className="flex gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-footprints"><path d="M4 16v-2.38C4 11.5 5.88 9.85 6 7.07l.02-1.89c.02-.75-.38-1.54-.3-2.29.09-.76.7-1.39 1.48-1.39.8 0 1.25.6 1.27 1.4l.02 1.89c.02.73-.2 1.63-.44 2.37l-.63 2.01A5.62 5.62 0 0 0 7 14.88V16"/><path d="M12 18.5V16c0-2.12 1.88-3.77 2-6.55l.02-1.89c.02-.75-.38-1.54-.3-2.29.09-.76.7-1.39 1.48-1.39.8 0 1.25.6 1.27 1.4l.02 1.89c.02.73-.2 1.63-.44 2.37l-.63 2.01A5.62 5.62 0 0 0 15 17.38V18.5"/><path d="M5 21a2 2 0 0 0 2-2v-.5a2 2 0 0 0-4 0v.5a2 2 0 0 0 2 2Z"/><path d="M13 22.5a2 2 0 0 0 2-2v-.5a2 2 0 0 0-4 0v.5a2 2 0 0 0 2 2Z"/></svg>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Intersección de Conexión</p>
+                <p className="text-sm font-semibold tracking-tight">Paradero Virtual Peatonal</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  A {nearestStop.distanceMeters}m ({Math.ceil(nearestStop.etaSeconds / 60)} min de caminata)
+                </p>
+              </div>
+            </div>
+
+            {/* Bus de Arribo */}
+            <div className="flex gap-3 pt-3 border-t border-border/40">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bus"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h20"/><path d="M26 12v6c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1v-6"/><path d="M6 18H3"/><path d="M21 18h-3"/><path d="M10 22h4"/><path d="M19 22H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2Z"/></svg>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Próximo Bus de Ruta</p>
+                {busArrival ? (
+                  <>
+                    <p className="text-sm font-semibold tracking-tight text-primary">
+                      {busArrival.etaSeconds < 30 ? (
+                        <span className="text-emerald-500 font-bold animate-pulse">¡Llegando al paradero!</span>
+                      ) : (
+                        `Arriba en ${Math.ceil(busArrival.etaSeconds / 60)} min`
+                      )}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      Estimación real basada en telemetría de bus
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic mt-0.5">
+                    Esperando señal del bus...
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Control Group (Bottom-Right) */}
       <div className="absolute bottom-5 right-5 z-[400] flex flex-col gap-2">
