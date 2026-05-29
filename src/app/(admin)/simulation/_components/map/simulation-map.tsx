@@ -252,36 +252,6 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
 
   return (
     <div className="relative w-full overflow-hidden border border-border shadow-xl rounded-2xl">
-      {/* Floating Location Controls (Top-Left) */}
-      <div className="absolute top-4 left-4 z-[400] bg-white dark:bg-card p-3 rounded-xl shadow-lg border border-black/5 flex items-center gap-3">
-        <div className="flex flex-col">
-          <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-none mb-1">Tu Ubicación</span>
-          <span className="text-xs font-semibold text-foreground leading-none">
-            {userLocation ? (isEditingLocation ? "Seleccionando..." : "Establecida y bloqueada") : "Sin establecer"}
-          </span>
-        </div>
-        {userLocation ? (
-          <button
-            type="button"
-            onClick={() => {
-              setIsEditingLocation(true);
-              toast.info("Haz clic en cualquier punto del mapa para cambiar tu ubicación.");
-            }}
-            className="text-xs font-medium px-2.5 py-1 rounded bg-secondary hover:bg-neutral-200 text-foreground transition"
-          >
-            Cambiar
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setIsEditingLocation(true)}
-            className="text-xs font-semibold px-2.5 py-1 rounded bg-primary text-primary-foreground hover:opacity-90 transition"
-          >
-            Establecer
-          </button>
-        )}
-      </div>
-
       {/* Edit Mode Active Banner */}
       {isEditingLocation && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[450] bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg border border-black/10 flex items-center gap-2 animate-pulse">
@@ -385,14 +355,19 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
 
       {/* Floating Control Group (Bottom-Right) */}
       <div className="absolute bottom-5 right-5 z-[400] flex flex-col gap-2">
-        {/* Fit Bounds to Routes / Buses */}
+        {/* Toggle Edit Location Mode */}
         <button
           type="button"
-          onClick={() => setTriggerFitBounds(true)}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-black/10 shadow-lg hover:bg-neutral-50 active:scale-95 transition text-black"
-          title="Ver todas las rutas y buses"
+          onClick={() => {
+            setIsEditingLocation((prev) => !prev);
+            if (!isEditingLocation) {
+              toast.info("Modo Edición: Haz clic en cualquier parte del mapa para ubicarte.");
+            }
+          }}
+          className={`flex h-11 w-11 items-center justify-center rounded-full border shadow-lg active:scale-95 transition ${isEditingLocation ? 'bg-primary text-primary-foreground border-primary' : 'bg-white text-black border-black/10 hover:bg-neutral-50'}`}
+          title="Cambiar mi ubicación en el mapa"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" class="lucide lucide-pencil"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
         </button>
 
         {/* Recenter on GPS */}
