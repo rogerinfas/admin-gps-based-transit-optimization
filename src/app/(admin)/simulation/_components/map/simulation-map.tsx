@@ -138,6 +138,7 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
 
   const [busArrival, setBusArrival] = useState<{
     etaSeconds: number;
+    hasPassed?: boolean;
   } | null>(null);
 
   // Validar si las coordenadas están en el rango geográfico aproximado de Arequipa
@@ -339,9 +340,13 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
 
     const busDistance = totalLength * progress;
     let remainingDistance = stopDistance - busDistance;
+    let hasPassed = false;
 
     if (remainingDistance < 0) {
-      // El bus ya pasó el paradero virtual, calcular para el siguiente ciclo
+      // Si el bus ya pasó la parada pero está a menos de 300 metros, activamos hasPassed
+      if (Math.abs(remainingDistance) < 300) {
+        hasPassed = true;
+      }
       remainingDistance = (totalLength - busDistance) + stopDistance;
     }
 
@@ -349,7 +354,7 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
     const etaSeconds = Math.round(remainingDistance / busSpeedMps);
 
     Promise.resolve().then(() => {
-      setBusArrival({ etaSeconds });
+      setBusArrival({ etaSeconds, hasPassed });
     });
   }, [nearestStop, routeIds, routes, vehicles]);
   // 2. Cargar datos base y conectar a Socket.IO
@@ -585,14 +590,19 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
                 {busArrival ? (
                   <>
                     <p className="text-sm font-semibold tracking-tight text-primary">
-                      {busArrival.etaSeconds < 30 ? (
+                      {busArrival.hasPassed ? (
+                        <span className="text-red-500 font-bold animate-pulse">¡El bus ya pasó tu paradero!</span>
+                      ) : busArrival.etaSeconds < 30 ? (
                         <span className="text-emerald-500 font-bold animate-pulse">¡Llegando al paradero!</span>
                       ) : (
                         `Arriba en ${Math.ceil(busArrival.etaSeconds / 60)} min`
                       )}
                     </p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">
-                      Estimación real basada en telemetría de bus
+                      {busArrival.hasPassed 
+                        ? "El bus acaba de pasar. Mostrando ETA del siguiente viaje."
+                        : "Estimación real basada en telemetría de bus"
+                      }
                     </p>
                   </>
                 ) : (
