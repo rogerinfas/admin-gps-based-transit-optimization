@@ -540,25 +540,26 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
         {routes.map((route, i) => {
           const polylinePositionsOutbound = route.outboundPath?.map((c: [number, number]) => [c[1], c[0]]) || [];
           const polylinePositionsReturn = route.returnPath?.map((c: [number, number]) => [c[1], c[0]]) || [];
-          const color = `hsl(${(i * 137.5) % 360}, 70%, 50%)`; // Generate distinct colors
+          const outboundColor = `hsl(${(i * 137.5) % 360}, 75%, 50%)`;
+          const returnColor = `hsl(${((i * 137.5) + 35) % 360}, 70%, 55%)`; // Distinct, harmonious color for return path
 
           return (
             <div key={route.id}>
               {polylinePositionsOutbound.length > 0 && (
                 <Polyline 
                   positions={polylinePositionsOutbound as [number, number][]} 
-                  color={color} 
+                  color={outboundColor} 
                   weight={5} 
-                  opacity={0.6} 
+                  opacity={0.7} 
                   dashArray="1, 10" 
                 />
               )}
               {polylinePositionsReturn.length > 0 && (
                 <Polyline 
                   positions={polylinePositionsReturn as [number, number][]} 
-                  color={color} 
+                  color={returnColor} 
                   weight={4} 
-                  opacity={0.4} 
+                  opacity={0.55} 
                   dashArray="5, 10" 
                 />
               )}
