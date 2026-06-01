@@ -125,6 +125,7 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
   const [isEditingLocation, setIsEditingLocation] = useState(false);
   const [isManual, setIsManual] = useState(false);
   const [connectionPath, setConnectionPath] = useState<[number, number][]>([]);
+  const [focusedPath, setFocusedPath] = useState<string | null>(null); // e.g. "routeId-outbound" or "routeId-return"
 
   // Nuevos estados para ETA
   const [nearestStop, setNearestStop] = useState<{
@@ -545,42 +546,50 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
 
           return (
             <div key={route.id}>
-              {polylinePositionsOutbound.length > 0 && (
-                <Polyline 
-                  positions={polylinePositionsOutbound as [number, number][]} 
-                  color={outboundColor} 
-                  weight={5} 
-                  opacity={0.7} 
-                  dashArray="1, 10"
-                  eventHandlers={{
-                    click: (e) => {
-                      const map = e.target._map;
-                      if (map) {
-                        map.fitBounds(e.target.getBounds(), { padding: [50, 50] });
-                        toast.info(`Enfocado en la ruta de ida del corredor: ${route.code}`);
+              {polylinePositionsOutbound.length > 0 && (() => {
+                const pathKey = `${route.id}-outbound`;
+                const isFocused = focusedPath === pathKey;
+                return (
+                  <Polyline 
+                    positions={polylinePositionsOutbound as [number, number][]} 
+                    color={outboundColor} 
+                    weight={isFocused ? 8 : 5} 
+                    opacity={isFocused ? 1 : 0.7} 
+                    dashArray={isFocused ? undefined : "1, 10"}
+                    eventHandlers={{
+                      click: (e) => {
+                        setFocusedPath(prev => prev === pathKey ? null : pathKey);
+                        const map = e.target._map;
+                        if (map) {
+                          map.fitBounds(e.target.getBounds(), { padding: [50, 50] });
+                        }
                       }
-                    }
-                  }}
-                />
-              )}
-              {polylinePositionsReturn.length > 0 && (
-                <Polyline 
-                  positions={polylinePositionsReturn as [number, number][]} 
-                  color={returnColor} 
-                  weight={4} 
-                  opacity={0.55} 
-                  dashArray="5, 10"
-                  eventHandlers={{
-                    click: (e) => {
-                      const map = e.target._map;
-                      if (map) {
-                        map.fitBounds(e.target.getBounds(), { padding: [50, 50] });
-                        toast.info(`Enfocado en la ruta de retorno del corredor: ${route.code}`);
+                    }}
+                  />
+                );
+              })()}
+              {polylinePositionsReturn.length > 0 && (() => {
+                const pathKey = `${route.id}-return`;
+                const isFocused = focusedPath === pathKey;
+                return (
+                  <Polyline 
+                    positions={polylinePositionsReturn as [number, number][]} 
+                    color={returnColor} 
+                    weight={isFocused ? 7 : 4} 
+                    opacity={isFocused ? 0.95 : 0.55} 
+                    dashArray={isFocused ? undefined : "5, 10"}
+                    eventHandlers={{
+                      click: (e) => {
+                        setFocusedPath(prev => prev === pathKey ? null : pathKey);
+                        const map = e.target._map;
+                        if (map) {
+                          map.fitBounds(e.target.getBounds(), { padding: [50, 50] });
+                        }
                       }
-                    }
-                  }}
-                />
-              )}
+                    }}
+                  />
+                );
+              })()}
             </div>
           );
         })}
