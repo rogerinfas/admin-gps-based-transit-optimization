@@ -138,6 +138,8 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
 
   const [busArrival, setBusArrival] = useState<{
     etaSeconds: number;
+    distanceMeters: number;
+    speedKph: number;
     hasPassed?: boolean;
   } | null>(null);
 
@@ -411,11 +413,17 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
       }
     }
 
-    const busSpeedMps = 25 / 3.6; // 25 km/h
+    const busSpeedKph = 25; // 25 km/h
+    const busSpeedMps = busSpeedKph / 3.6;
     const etaSeconds = Math.round(remainingDistance / busSpeedMps);
 
     Promise.resolve().then(() => {
-      setBusArrival({ etaSeconds, hasPassed });
+      setBusArrival({ 
+        etaSeconds, 
+        distanceMeters: Math.round(remainingDistance),
+        speedKph: busSpeedKph,
+        hasPassed 
+      });
     });
   }, [nearestStop, routeIds, routes, vehicles]);
   // 2. Cargar datos base y conectar a Socket.IO
@@ -641,38 +649,56 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
               </div>
             </div>
 
-            {/* Bus de Arribo */}
-            <div className="flex gap-3 pt-3 border-t border-border/40">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bus"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h20"/><path d="M26 12v6c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1v-6"/><path d="M6 18H3"/><path d="M21 18h-3"/><path d="M10 22h4"/><path d="M19 22H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2Z"/></svg>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Próximo Bus de Ruta</p>
-                {busArrival ? (
-                  <>
-                    <p className="text-sm font-semibold tracking-tight text-primary">
-                      {busArrival.hasPassed ? (
-                        <span className="text-red-500 font-bold animate-pulse">¡El bus ya pasó tu paradero!</span>
-                      ) : busArrival.etaSeconds < 30 ? (
-                        <span className="text-emerald-500 font-bold animate-pulse">¡Llegando al paradero!</span>
-                      ) : (
-                        `Arriba en ${Math.ceil(busArrival.etaSeconds / 60)} min`
-                      )}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {busArrival.hasPassed 
-                        ? "El bus acaba de pasar. Mostrando ETA del siguiente viaje."
-                        : "Estimación real basada en telemetría de bus"
-                      }
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-xs text-muted-foreground italic mt-0.5">
-                    Esperando señal del bus...
-                  </p>
-                )}
-              </div>
-            </div>
+             {/* Bus de Arribo */}
+             <div className="flex gap-3 pt-3 border-t border-border/40">
+               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bus"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h20"/><path d="M26 12v6c0 .6-.4 1-1 1H3c-.6 0-1-.4-1-1v-6"/><path d="M6 18H3"/><path d="M21 18h-3"/><path d="M10 22h4"/><path d="M19 22H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2Z"/></svg>
+               </div>
+               <div className="flex-1">
+                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Próximo Bus de Ruta</p>
+                 {busArrival ? (
+                   <>
+                     <p className="text-sm font-semibold tracking-tight text-primary">
+                       {busArrival.hasPassed ? (
+                         <span className="text-red-500 font-bold animate-pulse">¡El bus ya pasó tu paradero!</span>
+                       ) : busArrival.etaSeconds < 30 ? (
+                         <span className="text-emerald-500 font-bold animate-pulse">¡Llegando al paradero!</span>
+                       ) : (
+                         `Arriba en ${Math.ceil(busArrival.etaSeconds / 60)} min`
+                       )}
+                     </p>
+                     
+                     {/* Premium Telemetry Data Grid */}
+                     <div className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground border-t border-border/20 pt-1.5">
+                       <div>
+                         <span className="font-medium">Distancia:</span>{" "}
+                         <span className="font-semibold text-foreground">
+                           {busArrival.distanceMeters >= 1000 
+                             ? `${(busArrival.distanceMeters / 1000).toFixed(2)} km` 
+                             : `${busArrival.distanceMeters} m`
+                           }
+                         </span>
+                       </div>
+                       <div>
+                         <span className="font-medium">Velocidad:</span>{" "}
+                         <span className="font-semibold text-foreground">{busArrival.speedKph} km/h</span>
+                       </div>
+                     </div>
+
+                     <p className="text-[9px] text-muted-foreground mt-1.5 italic">
+                       {busArrival.hasPassed 
+                         ? "El bus acaba de pasar. Mostrando datos del siguiente viaje."
+                         : "Estimación real basada en telemetría de bus"
+                       }
+                     </p>
+                   </>
+                 ) : (
+                   <p className="text-xs text-muted-foreground italic mt-0.5">
+                     Esperando señal del bus...
+                   </p>
+                 )}
+               </div>
+             </div>
           </div>
         </div>
       )}
