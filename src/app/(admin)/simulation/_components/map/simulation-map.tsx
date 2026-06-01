@@ -551,7 +551,16 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
                   color={outboundColor} 
                   weight={5} 
                   opacity={0.7} 
-                  dashArray="1, 10" 
+                  dashArray="1, 10"
+                  eventHandlers={{
+                    click: (e) => {
+                      const map = e.target._map;
+                      if (map) {
+                        map.fitBounds(e.target.getBounds(), { padding: [50, 50] });
+                        toast.info(`Enfocado en la ruta de ida del corredor: ${route.code}`);
+                      }
+                    }
+                  }}
                 />
               )}
               {polylinePositionsReturn.length > 0 && (
@@ -560,7 +569,16 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
                   color={returnColor} 
                   weight={4} 
                   opacity={0.55} 
-                  dashArray="5, 10" 
+                  dashArray="5, 10"
+                  eventHandlers={{
+                    click: (e) => {
+                      const map = e.target._map;
+                      if (map) {
+                        map.fitBounds(e.target.getBounds(), { padding: [50, 50] });
+                        toast.info(`Enfocado en la ruta de retorno del corredor: ${route.code}`);
+                      }
+                    }
+                  }}
                 />
               )}
             </div>
