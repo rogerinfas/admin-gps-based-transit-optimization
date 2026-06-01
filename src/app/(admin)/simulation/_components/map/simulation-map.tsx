@@ -227,32 +227,7 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
   // 1. Calcular el punto de la ruta más cercano al usuario (Paradero Virtual / Intersección)
   // y consultar OSRM para obtener la ruta peatonal exacta con distancia y tiempo de caminata real.
   useEffect(() => {
-    if (!userLocation || routes.length === 0) {
-      Promise.resolve().then(() => {
-        setNearestStop(null);
-        setConnectionPath([]);
-      });
-      return;
-    }
-
-    let bestRoutePoint: [number, number] | null = null;
-    let minDistance = Infinity;
-    let selectedRoute: RouteData | null = null;
-
-    routes.forEach((route) => {
-      route.outboundPath?.forEach((c) => {
-        const lat = c[1];
-        const lon = c[0];
-        const dist = Math.pow(lat - userLocation[0], 2) + Math.pow(lon - userLocation[1], 2);
-        if (dist < minDistance) {
-          minDistance = dist;
-          bestRoutePoint = [lat, lon];
-          selectedRoute = route;
-        }
-      });
-    });
-
-    if (!bestRoutePoint || !selectedRoute) {
+    if (!userLocation || routes.length === 0 || routeIds.length === 0) {
       Promise.resolve().then(() => {
         setNearestStop(null);
         setConnectionPath([]);
@@ -261,17 +236,30 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
     }
 
     const startPoint = userLocation;
-    const endPoint = bestRoutePoint as [number, number];
-    const route = selectedRoute as RouteData;
+    const routeId = routeIds[0];
 
     const getRoute = async () => {
       try {
+        const API_URL = getBackendUrl();
+        const nearestStopRes = await fetch(
+          `${API_URL}/eta/nearest-stop?lat=${startPoint[0]}&lng=${startPoint[1]}&routeId=${routeId}`
+        );
+        const nearestStopData = await nearestStopRes.json();
+
+        if (!nearestStopData || !nearestStopData.latitude) {
+          setNearestStop(null);
+          setConnectionPath([]);
+          return;
+        }
+
+        const endPoint: [number, number] = [nearestStopData.latitude, nearestStopData.longitude];
+
         const url = `https://router.project-osrm.org/route/v1/foot/${startPoint[1]},${startPoint[0]};${endPoint[1]},${endPoint[0]}?overview=full&geometries=geojson`;
         const res = await fetch(url);
         const data = await res.json();
         
-        let distanceMeters = 0;
-        let etaSeconds = 0;
+        let distanceMeters = nearestStopData.distanceMeters;
+        let etaSeconds = nearestStopData.etaSeconds;
 
         if (data.routes && data.routes.length > 0) {
           const osrmRoute = data.routes[0];
@@ -281,16 +269,11 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
           etaSeconds = Math.round(osrmRoute.duration);
         } else {
           setConnectionPath([startPoint, endPoint]);
-          const fallbackDist = L.latLng(startPoint).distanceTo(L.latLng(endPoint));
-          distanceMeters = Math.round(fallbackDist * 1.3);
-          etaSeconds = Math.round(distanceMeters / 1.2);
         }
 
-        // Determinar el nombre de la calle o punto de encuentro dinámico
-        const name = `Intersección ${route.code} (Punto Peatonal más cercano)`;
-
         setNearestStop({
-          name,
+          stopId: nearestStopData.stopId,
+          name: nearestStopData.name,
           latitude: endPoint[0],
           longitude: endPoint[1],
           distanceMeters,
@@ -298,18 +281,9 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
         });
       } catch (err) {
         console.error("OSRM Pedestrian error:", err);
-        setConnectionPath([startPoint, endPoint]);
-        const fallbackDist = L.latLng(startPoint).distanceTo(L.latLng(endPoint));
-        const distanceMeters = Math.round(fallbackDist * 1.3);
-        const etaSeconds = Math.round(distanceMeters / 1.2);
-
-        setNearestStop({
-          name: `Intersección ${route.code} (Punto Peatonal más cercano)`,
-          latitude: endPoint[0],
-          longitude: endPoint[1],
-          distanceMeters,
-          etaSeconds,
-        });
+        // Fallback simple distance if API fails
+        setNearestStop(null);
+        setConnectionPath([]);
       }
     };
 
