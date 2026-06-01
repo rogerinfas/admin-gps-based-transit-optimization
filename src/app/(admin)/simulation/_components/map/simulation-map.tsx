@@ -309,45 +309,106 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
     }
 
     const vehicle = busGroup[0]; // bus en circulación
-    const progress = vehicle.progress;
+    const progress = vehicle.progress; // Progreso global de la simulación (0.0 a 1.0)
 
-    // Calcular largo de ruta y distancia del paradero al inicio de forma geodésica
+    // Obtener trayectos ida (outbound) y retorno (return)
     const outboundPath = route.outboundPath;
-    let totalLength = 0;
+    const returnPath = route.returnPath || [...outboundPath].reverse();
+
+    // Calcular longitud geodésica de ida y retorno
+    let outboundLength = 0;
     for (let i = 0; i < outboundPath.length - 1; i++) {
-      totalLength += L.latLng(outboundPath[i][1], outboundPath[i][0]).distanceTo(
+      outboundLength += L.latLng(outboundPath[i][1], outboundPath[i][0]).distanceTo(
         L.latLng(outboundPath[i+1][1], outboundPath[i+1][0])
       );
     }
 
-    // Encontrar el índice del punto más cercano
-    let closestIndex = 0;
-    let minDistance = Infinity;
+    let returnLength = 0;
+    for (let i = 0; i < returnPath.length - 1; i++) {
+      returnLength += L.latLng(returnPath[i][1], returnPath[i][0]).distanceTo(
+        L.latLng(returnPath[i+1][1], returnPath[i+1][0])
+      );
+    }
+
+    // Determinar en qué tramo (ida o retorno) está más cerca el paradero virtual del usuario
+    let minOutboundDist = Infinity;
+    let closestOutboundIdx = 0;
     outboundPath.forEach((c, idx) => {
       const dist = Math.pow(c[1] - nearestStop.latitude, 2) + Math.pow(c[0] - nearestStop.longitude, 2);
-      if (dist < minDistance) {
-        minDistance = dist;
-        closestIndex = idx;
+      if (dist < minOutboundDist) {
+        minOutboundDist = dist;
+        closestOutboundIdx = idx;
       }
     });
 
+    let minReturnDist = Infinity;
+    let closestReturnIdx = 0;
+    returnPath.forEach((c, idx) => {
+      const dist = Math.pow(c[1] - nearestStop.latitude, 2) + Math.pow(c[0] - nearestStop.longitude, 2);
+      if (dist < minReturnDist) {
+        minReturnDist = dist;
+        closestReturnIdx = idx;
+      }
+    });
+
+    const stopIsOnOutbound = minOutboundDist <= minReturnDist;
+
+    // Calcular distancia de la parada desde el inicio de su tramo correspondiente
     let stopDistance = 0;
-    for (let i = 0; i < closestIndex; i++) {
-      stopDistance += L.latLng(outboundPath[i][1], outboundPath[i][0]).distanceTo(
-        L.latLng(outboundPath[i+1][1], outboundPath[i+1][0])
-      );
+    if (stopIsOnOutbound) {
+      for (let i = 0; i < closestOutboundIdx; i++) {
+        stopDistance += L.latLng(outboundPath[i][1], outboundPath[i][0]).distanceTo(
+          L.latLng(outboundPath[i+1][1], outboundPath[i+1][0])
+        );
+      }
+    } else {
+      for (let i = 0; i < closestReturnIdx; i++) {
+        stopDistance += L.latLng(returnPath[i][1], returnPath[i][0]).distanceTo(
+          L.latLng(returnPath[i+1][1], returnPath[i+1][0])
+        );
+      }
     }
 
-    const busDistance = totalLength * progress;
-    let remainingDistance = stopDistance - busDistance;
+    // Calcular la posición y distancia restante en base a si el bus está en ida (<= 0.5) o retorno (> 0.5)
+    let remainingDistance = 0;
     let hasPassed = false;
 
-    if (remainingDistance < 0) {
-      // Si el bus ya pasó la parada pero está a menos de 300 metros, activamos hasPassed
-      if (Math.abs(remainingDistance) < 300) {
-        hasPassed = true;
+    if (progress <= 0.5) {
+      // El bus está en la ida (outbound) -> progreso escala de 0.0 a 1.0 en outbound
+      const outboundProgress = progress * 2;
+      const busDistance = outboundLength * outboundProgress;
+
+      if (stopIsOnOutbound) {
+        remainingDistance = stopDistance - busDistance;
+        if (remainingDistance < 0) {
+          if (Math.abs(remainingDistance) < 300) {
+            hasPassed = true;
+          }
+          // El bus ya pasó el paradero de ida, debe completar la ida, el retorno entero y volver a la parada
+          remainingDistance = (outboundLength - busDistance) + returnLength + stopDistance;
+        }
+      } else {
+        // La parada está en el retorno, el bus debe llegar al fin de ida y avanzar en el retorno
+        remainingDistance = (outboundLength - busDistance) + stopDistance;
       }
-      remainingDistance = (totalLength - busDistance) + stopDistance;
+    } else {
+      // El bus está en el retorno (return) -> progreso escala de 0.0 a 1.0 en return
+      const returnProgress = (progress - 0.5) * 2;
+      const busDistance = returnLength * returnProgress;
+
+      if (!stopIsOnOutbound) {
+        remainingDistance = stopDistance - busDistance;
+        if (remainingDistance < 0) {
+          if (Math.abs(remainingDistance) < 300) {
+            hasPassed = true;
+          }
+          // El bus ya pasó el paradero de retorno, debe completar retorno, ida entera y volver a la parada
+          remainingDistance = (returnLength - busDistance) + outboundLength + stopDistance;
+        }
+      } else {
+        // La parada está en la ida, el bus debe terminar retorno y avanzar en la ida
+        remainingDistance = (returnLength - busDistance) + stopDistance;
+      }
     }
 
     const busSpeedMps = 25 / 3.6; // 25 km/h
