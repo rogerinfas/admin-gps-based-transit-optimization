@@ -78,6 +78,91 @@ export interface paths {
         patch: operations["RouteController_update"];
         trace?: never;
     };
+    "/routes/{id}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Subir o reemplazar la imagen de una ruta */
+        post: operations["RouteController_uploadImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/routes/{id}/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Obtener un punto interpolado para simulación */
+        get: operations["RouteController_simulate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** User login */
+        post: operations["AuthController_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/eta/nearest-stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Obtener el paradero más cercano y tiempo de caminata estimado */
+        get: operations["EtaController_getNearestStop"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/eta/bus-arrival": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Obtener tiempo estimado de arribo (ETA) del bus al paradero */
+        get: operations["EtaController_getBusArrivalEta"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -105,8 +190,8 @@ export interface components {
              */
             capacity?: Record<string, never> | null;
             /**
-             * @description Identificador de la ruta asignada
-             * @example ckxyz123
+             * @description Identificador (UUID) de la ruta asignada
+             * @example 11111111-2222-3333-4444-555555555555
              */
             routeId?: Record<string, never> | null;
         };
@@ -176,8 +261,8 @@ export interface components {
              */
             capacity?: Record<string, never> | null;
             /**
-             * @description Identificador de la ruta asignada
-             * @example ckxyz123
+             * @description Identificador (UUID) de la ruta asignada
+             * @example 11111111-2222-3333-4444-555555555555
              */
             routeId?: Record<string, never> | null;
         };
@@ -196,7 +281,17 @@ export interface components {
              * @description Descripción opcional para operaciones
              * @example Ruta urbana Characato - Linea A
              */
-            description?: Record<string, never> | null;
+            description?: string | null;
+            /**
+             * @description URL de la imagen del bus/ruta
+             * @example https://ejemplo.com/bus.jpg
+             */
+            imageUrl?: string;
+            /**
+             * @description Color hexadecimal de la ruta
+             * @example #3b82f6
+             */
+            color?: string;
             /**
              * @description Indica si la ruta está operativa
              * @example true
@@ -225,10 +320,20 @@ export interface components {
              */
             description: Record<string, never> | null;
             /**
+             * @description URL de la imagen de la ruta
+             * @example https://ejemplo.com/bus.jpg
+             */
+            imageUrl: Record<string, never> | null;
+            /**
              * @description Indica si la ruta está operativa
              * @example true
              */
             isActive: boolean;
+            /**
+             * @description Color hexadecimal de la ruta
+             * @example #3b82f6
+             */
+            color: string;
             /**
              * @description Fecha de creación en ISO 8601
              * @example 2026-04-28T15:00:00.000Z
@@ -239,6 +344,34 @@ export interface components {
              * @example 2026-04-28T15:00:00.000Z
              */
             updatedAt: string;
+            /**
+             * @description Geometría de la ruta de Ida en formato de coordenadas [[lon, lat], ...]
+             * @example [
+             *       [
+             *         -71.4883,
+             *         -16.4716
+             *       ],
+             *       [
+             *         -71.531,
+             *         -16.406
+             *       ]
+             *     ]
+             */
+            outboundPath?: number[][];
+            /**
+             * @description Geometría de la ruta de Regreso en formato de coordenadas [[lon, lat], ...]
+             * @example [
+             *       [
+             *         -71.531,
+             *         -16.406
+             *       ],
+             *       [
+             *         -71.4883,
+             *         -16.4716
+             *       ]
+             *     ]
+             */
+            returnPath?: number[][];
         };
         UpdateRouteDto: {
             /**
@@ -255,12 +388,131 @@ export interface components {
              * @description Descripción opcional para operaciones
              * @example Ruta urbana Characato - Linea A
              */
-            description?: Record<string, never> | null;
+            description?: string | null;
+            /**
+             * @description URL de la imagen del bus/ruta
+             * @example https://ejemplo.com/bus.jpg
+             */
+            imageUrl?: string;
+            /**
+             * @description Color hexadecimal de la ruta
+             * @example #3b82f6
+             */
+            color?: string;
             /**
              * @description Indica si la ruta está operativa
              * @example true
              */
             isActive?: boolean;
+            /**
+             * @description Geometría LineString (GeoJSON) para la ruta de Ida
+             * @example {
+             *       "type": "LineString",
+             *       "coordinates": [
+             *         [
+             *           -71.53,
+             *           -16.4
+             *         ],
+             *         [
+             *           -71.54,
+             *           -16.41
+             *         ]
+             *       ]
+             *     }
+             */
+            outboundPathGeoJson?: Record<string, never>;
+            /**
+             * @description Geometría LineString (GeoJSON) para la ruta de Regreso
+             * @example {
+             *       "type": "LineString",
+             *       "coordinates": [
+             *         [
+             *           -71.54,
+             *           -16.41
+             *         ],
+             *         [
+             *           -71.53,
+             *           -16.4
+             *         ]
+             *       ]
+             *     }
+             */
+            returnPathGeoJson?: Record<string, never>;
+        };
+        LoginDto: {
+            /** @example user@gps-transit.com */
+            email: string;
+            /** @example User123! */
+            password: string;
+        };
+        NearestStopResponse: {
+            /**
+             * @description Identificador único de la parada física o el ID virtual generado para el punto peatonal
+             * @example virtual:outbound:-16.456785:-71.494358
+             */
+            stopId: string;
+            /**
+             * @description Nombre descriptivo de la parada o punto de intersección peatonal
+             * @example Intersección SIT-T1 (Punto Peatonal más cercano)
+             */
+            name: string;
+            /**
+             * @description Latitud geográfica de la parada o punto peatonal
+             * @example -16.456785
+             */
+            latitude: number;
+            /**
+             * @description Longitud geográfica de la parada o punto peatonal
+             * @example -71.494358
+             */
+            longitude: number;
+            /**
+             * @description Distancia real calculada a pie hasta la parada (incluye factor de desvío peatonal)
+             * @example 120
+             */
+            distanceMeters: number;
+            /**
+             * @description Tiempo estimado de llegada (ETA) en segundos caminando hacia el punto peatonal
+             * @example 100
+             */
+            etaSeconds: number;
+        };
+        BusArrivalEtaResponse: {
+            /**
+             * @description Identificador único de la ruta del autobús
+             * @example d4da01fd-ffc9-b805-67bf-5fa834bde675
+             */
+            routeId: string;
+            /**
+             * @description Identificador único de la parada de destino
+             * @example virtual:outbound:-16.450655:-71.496045
+             */
+            stopId: string;
+            /**
+             * @description Progreso actual del autobús a lo largo de la ruta (0.0 a 1.0 representando el viaje completo)
+             * @example 0.35
+             */
+            progress: number;
+            /**
+             * @description Distancia recorrida por el autobús en metros a lo largo de su tramo actual
+             * @example 2450
+             */
+            busDistanceMeters: number;
+            /**
+             * @description Distancia total acumulada desde el inicio de la ruta hasta la parada destino en metros
+             * @example 4100
+             */
+            stopDistanceMeters: number;
+            /**
+             * @description Distancia restante que le falta al autobús para llegar a la parada en metros
+             * @example 1650
+             */
+            distanceToStopMeters: number;
+            /**
+             * @description Tiempo estimado de llegada (ETA) del autobús a la parada en segundos
+             * @example 238
+             */
+            etaSeconds: number;
         };
     };
     responses: never;
@@ -560,6 +812,142 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    RouteController_uploadImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador de la ruta */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RouteResponseDto"];
+                };
+            };
+            /** @description Ruta no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RouteController_simulate: {
+        parameters: {
+            query: {
+                /** @description Progreso de la ruta (0.0 a 1.0) */
+                progress: string;
+            };
+            header?: never;
+            path: {
+                /** @description Identificador de la ruta */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Punto interpolado [lon, lat] */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number[];
+                };
+            };
+        };
+    };
+    AuthController_login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginDto"];
+            };
+        };
+        responses: {
+            /** @description Return JWT token */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EtaController_getNearestStop: {
+        parameters: {
+            query: {
+                lat: number;
+                lng: number;
+                routeId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NearestStopResponse"];
+                };
+            };
+        };
+    };
+    EtaController_getBusArrivalEta: {
+        parameters: {
+            query: {
+                routeId: string;
+                stopId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusArrivalEtaResponse"];
+                };
             };
         };
     };

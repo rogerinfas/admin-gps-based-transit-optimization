@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { QueryProvider } from "@/contexts/query-provider";
+import { AuthProvider } from "@/contexts/auth-provider";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -39,12 +41,21 @@ export default function RootLayout({
     var theme = saved === "dark" || saved === "light"
       ? saved
       : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    document.documentElement.setAttribute("data-theme", theme);
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   } catch (e) {}
 })();`,
           }}
         />
-        <QueryProvider>{children}</QueryProvider>
+        <AuthProvider>
+          <QueryProvider>
+            {children}
+            <Toaster richColors position="top-right" />
+          </QueryProvider>
+        </AuthProvider>
       </body>
     </html>
   );

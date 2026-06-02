@@ -16,15 +16,15 @@ export default function Error({
         <h1 className="mt-2 text-2xl font-semibold">
           No se pudo cargar el panel de operaciones
         </h1>
-        <p className="mt-3 text-sm text-muted">
+        <p className="mt-3 text-sm text-muted-foreground">
           Verifica que el backend este activo y que `NEXT_PUBLIC_API_BASE_URL`
           apunte a la API correcta.
         </p>
-        <p className="mt-2 text-xs text-muted">{error.message}</p>
+        <p className="mt-2 text-xs text-muted-foreground">{error.message}</p>
         <button
           type="button"
           onClick={reset}
-          className="mt-5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-contrast"
+          className="mt-5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
         >
           Reintentar
         </button>
