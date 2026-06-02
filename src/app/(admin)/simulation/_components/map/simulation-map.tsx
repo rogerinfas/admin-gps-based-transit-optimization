@@ -105,6 +105,7 @@ interface RouteData {
   id: string;
   name: string;
   code: string;
+  color?: string;
   outboundPath?: [number, number][];
   returnPath?: [number, number][];
 }
@@ -541,8 +542,8 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
         {routes.map((route, i) => {
           const polylinePositionsOutbound = route.outboundPath?.map((c: [number, number]) => [c[1], c[0]]) || [];
           const polylinePositionsReturn = route.returnPath?.map((c: [number, number]) => [c[1], c[0]]) || [];
-          const outboundColor = `hsl(${(i * 137.5) % 360}, 75%, 50%)`;
-          const returnColor = `hsl(${((i * 137.5) + 35) % 360}, 70%, 55%)`; // Distinct, harmonious color for return path
+          const outboundColor = route.color || `hsl(${(i * 137.5) % 360}, 75%, 50%)`;
+          const returnColor = route.color || `hsl(${((i * 137.5) + 35) % 360}, 70%, 55%)`; // Distinct, harmonious color for return path
 
           return (
             <div key={route.id}>
@@ -554,7 +555,7 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
                     positions={polylinePositionsOutbound as [number, number][]} 
                     color={outboundColor} 
                     weight={isFocused ? 8 : 5} 
-                    opacity={isFocused ? 1 : 0.7} 
+                    opacity={isFocused ? 1 : (route.color ? 0.85 : 0.7)} 
                     dashArray={isFocused ? undefined : "1, 10"}
                     eventHandlers={{
                       click: (e) => {
@@ -576,7 +577,7 @@ export default function SimulationMap({ routeIds }: SimulationMapProps) {
                     positions={polylinePositionsReturn as [number, number][]} 
                     color={returnColor} 
                     weight={isFocused ? 7 : 4} 
-                    opacity={isFocused ? 0.95 : 0.55} 
+                    opacity={isFocused ? 0.95 : (route.color ? 0.35 : 0.55)} 
                     dashArray={isFocused ? undefined : "5, 10"}
                     eventHandlers={{
                       click: (e) => {
