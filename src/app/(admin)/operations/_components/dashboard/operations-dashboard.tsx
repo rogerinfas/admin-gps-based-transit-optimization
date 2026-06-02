@@ -72,6 +72,7 @@ export default function OperationsDashboard({ data }: Props) {
   const [routeCode, setRouteCode] = useState("");
   const [routeName, setRouteName] = useState("");
   const [routeDescription, setRouteDescription] = useState("");
+  const [routeColor, setRouteColor] = useState("#3b82f6");
   const [routeIsActive, setRouteIsActive] = useState(true);
 
   // --- FORM STATE - VEHICLE ---
@@ -113,12 +114,14 @@ export default function OperationsDashboard({ data }: Props) {
       setRouteCode(route.code);
       setRouteName(route.name);
       setRouteDescription(route.description ?? "");
+      setRouteColor(route.color || "#3b82f6");
       setRouteIsActive(route.isActive);
     } else {
       setEditingRoute(null);
       setRouteCode("");
       setRouteName("");
       setRouteDescription("");
+      setRouteColor("#3b82f6");
       setRouteIsActive(true);
     }
     setRouteModalOpen(true);
@@ -132,6 +135,7 @@ export default function OperationsDashboard({ data }: Props) {
           code: routeCode,
           name: routeName,
           description: routeDescription || null,
+          color: routeColor,
           isActive: routeIsActive,
         },
         {
@@ -148,6 +152,7 @@ export default function OperationsDashboard({ data }: Props) {
           code: routeCode,
           name: routeName,
           description: routeDescription || null,
+          color: routeColor,
           isActive: routeIsActive,
         },
         {
@@ -332,9 +337,15 @@ export default function OperationsDashboard({ data }: Props) {
                   className="justify-between w-full h-auto py-3 px-4 relative group"
                   onClick={() => setSelectedRouteId(route.id)}
                 >
-                  <div className="flex flex-col items-start gap-1">
-                    <span className="font-semibold">{route.name}</span>
-                    <span className="text-xs opacity-70 font-mono">{route.code}</span>
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-110" 
+                      style={{ backgroundColor: route.color || "#3b82f6" }} 
+                    />
+                    <div className="flex flex-col items-start gap-1">
+                      <span className="font-semibold">{route.name}</span>
+                      <span className="text-xs opacity-70 font-mono">{route.code}</span>
+                    </div>
                   </div>
                   {!route.isActive && (
                     <Badge variant="destructive" className="ml-2 px-1 py-0 h-4 w-4 rounded-full flex justify-center items-center p-0" title="Inactiva" />
@@ -500,6 +511,32 @@ export default function OperationsDashboard({ data }: Props) {
                 rows={3}
                 className="resize-none"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase">Color del Corredor / Ruta</label>
+              <div className="flex items-center gap-3 bg-muted/30 p-2.5 rounded-lg border border-border">
+                <Input
+                  type="color"
+                  value={routeColor}
+                  onChange={(e) => setRouteColor(e.target.value)}
+                  className="w-12 h-10 p-0 border-0 bg-transparent cursor-pointer shrink-0 rounded"
+                />
+                <div className="flex-1">
+                  <Input
+                    type="text"
+                    value={routeColor.toUpperCase()}
+                    onChange={(e) => {
+                      if (/^#[0-9A-F]{6}$/i.test(e.target.value) || e.target.value.length <= 7) {
+                        setRouteColor(e.target.value);
+                      }
+                    }}
+                    placeholder="#3B82F6"
+                    className="h-9 font-mono uppercase text-xs"
+                    maxLength={7}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center space-x-2 bg-muted/50 p-3 rounded-lg border border-border">
