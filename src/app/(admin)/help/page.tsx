@@ -97,7 +97,7 @@ export default function HelpPage() {
         <section className="grid gap-6 md:grid-cols-3">
           <Card className="hover:shadow-lg transition-all duration-300 border-border/80 flex flex-col group hover:-translate-y-1">
             <CardHeader className="pb-3 flex flex-col gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
                 <Activity size={20} />
               </div>
               <CardTitle className="text-lg">Operaciones (Dashboard)</CardTitle>
@@ -112,7 +112,7 @@ export default function HelpPage() {
 
           <Card className="hover:shadow-lg transition-all duration-300 border-border/80 flex flex-col group hover:-translate-y-1">
             <CardHeader className="pb-3 flex flex-col gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
                 <Map size={20} />
               </div>
               <CardTitle className="text-lg">Editor de Mapas</CardTitle>
@@ -127,7 +127,7 @@ export default function HelpPage() {
 
           <Card className="hover:shadow-lg transition-all duration-300 border-border/80 flex flex-col group hover:-translate-y-1">
             <CardHeader className="pb-3 flex flex-col gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
                 <Zap size={20} />
               </div>
               <CardTitle className="text-lg">Simulación en Vivo</CardTitle>
@@ -174,20 +174,12 @@ export default function HelpPage() {
                 <p className="text-muted-foreground text-xs leading-relaxed">
                   Nuestro equipo de administración del sistema de transportes TransiGo está disponible para resolver dudas técnicas del backend NestJS o la base de datos PostGIS.
                 </p>
-                <div className="space-y-2.5">
-                  <Button 
-                    className="w-full text-xs font-semibold gap-2 h-9" 
-                    onClick={() => window.open('mailto:soporte@transigo.com')}
-                  >
-                    <Mail size={14} /> Correo de Soporte
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full text-xs font-semibold gap-2 h-9 bg-white dark:bg-black"
-                  >
-                    <MessageSquare size={14} /> Chat Directo
-                  </Button>
-                </div>
+                <Button 
+                  className="w-full text-xs font-semibold gap-2 h-9" 
+                  onClick={() => window.open('mailto:soporte@transigo.com')}
+                >
+                  <Mail size={14} /> Correo de Soporte
+                </Button>
               </CardContent>
             </Card>
           </div>
