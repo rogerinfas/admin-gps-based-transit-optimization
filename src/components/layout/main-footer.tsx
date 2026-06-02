@@ -10,7 +10,7 @@ export default function MainFooter() {
           <Logo href="/" textColor="auto" />
           <span className="hidden sm:inline text-xs text-muted-foreground">|</span>
           <p className="text-xs text-muted-foreground text-center sm:text-left">
-            &copy; {currentYear} TransiGo. Todos los derechos reservados.
+            &copy; {currentYear} TransiGo. Desarrollado por Roger Infas. Todos los derechos reservados.
           </p>
         </div>
         <div className="flex items-center gap-6 text-xs text-muted-foreground">
