@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { MapPin, ArrowLeft } from "lucide-react";
+import PageShell from "@/components/layout/page-shell";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6 text-center select-none">
+    <PageShell navbarVariant="dark" mainClassName="flex-1 flex items-center justify-center py-12 px-6">
       
       {/* Premium Glassmorphic Card */}
       <div className="relative max-w-md w-full bg-card border border-border p-8 md:p-10 rounded-3xl shadow-xl flex flex-col items-center gap-6 animate-in fade-in zoom-in-95 duration-300">
@@ -40,6 +41,6 @@ export default function NotFound() {
         </Button>
       </div>
       
-    </div>
+    </PageShell>
   );
 }
