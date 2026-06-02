@@ -24,10 +24,10 @@ export default function NotFound() {
             404
           </h1>
           <h2 className="text-xl font-bold text-foreground">
-            Ruta no encontrada
+            Página no encontrada
           </h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            El trayecto o destino que buscas no está mapeado en nuestro sistema. Comprueba la dirección o regresa al centro de control de TransiGo.
+            La página que buscas no existe, ha sido movida o está temporalmente fuera de servicio. Comprueba la dirección o regresa al inicio de TransiGo.
           </p>
         </div>
 
