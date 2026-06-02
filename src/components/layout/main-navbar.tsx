@@ -62,6 +62,8 @@ export default function MainNavbar({ variant = "light" }: MainNavbarProps) {
           <ThemeToggle />
           <Button
             variant="ghost"
+            render={<Link href="/help" />}
+            nativeButton={false}
             className={
               isDark ? "text-white/90 hover:text-white hover:bg-white/10" : "text-muted-foreground hover:text-foreground"
             }
@@ -132,7 +134,10 @@ export default function MainNavbar({ variant = "light" }: MainNavbarProps) {
             <hr className={isDark ? "border-white/10 my-2" : "border-border my-2"} />
             <Button
               variant="ghost"
+              render={<Link href="/help" />}
+              nativeButton={false}
               className="justify-start"
+              onClick={() => setIsMobileMenuOpen(false)}
             >
               Ayuda
             </Button>
