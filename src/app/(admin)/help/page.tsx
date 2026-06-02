@@ -72,7 +72,7 @@ export default function HelpPage() {
   ];
 
   return (
-    <PageShell>
+    <PageShell navbarVariant="dark">
       <div className="max-w-5xl mx-auto flex flex-col gap-10 py-6">
         
         {/* Premium Banner */}
