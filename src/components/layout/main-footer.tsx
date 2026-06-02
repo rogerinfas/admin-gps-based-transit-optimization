@@ -14,13 +14,13 @@ export default function MainFooter() {
           </p>
         </div>
         <div className="flex items-center gap-6 text-xs text-muted-foreground">
-          <Link href="/help" className="hover:text-foreground transition-colors">
+          <Link href="/ayuda" className="hover:text-foreground transition-colors">
             Ayuda & Soporte
           </Link>
-          <Link href="#" className="hover:text-foreground transition-colors">
+          <Link href="/terms" className="hover:text-foreground transition-colors">
             Términos
           </Link>
-          <Link href="#" className="hover:text-foreground transition-colors">
+          <Link href="/privacy" className="hover:text-foreground transition-colors">
             Privacidad
           </Link>
         </div>
