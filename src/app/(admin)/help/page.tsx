@@ -11,8 +11,7 @@ import {
   BookOpen, 
   ChevronDown, 
   Mail, 
-  AlertCircle,
-  MessageSquare
+  AlertCircle
 } from "lucide-react";
 import { useState } from "react";
 
