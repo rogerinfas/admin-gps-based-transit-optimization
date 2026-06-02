@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Polyline, CircleMarker, useMapEvents, Tooltip 
 import 'leaflet/dist/leaflet.css';
 import { useState, useEffect } from 'react';
 import { getBackendUrl } from '@/lib/api/types/backend';
+import { toast } from 'sonner';
 
 interface RouteEditorMapProps {
   routeId: string;
@@ -152,7 +153,7 @@ export default function RouteEditorMap({ routeId }: RouteEditorMapProps) {
       
       if (!res.ok) throw new Error('Error al guardar en el servidor');
       
-      alert('Rutas guardadas exitosamente');
+      toast.success('Rutas guardadas exitosamente');
     } catch (err) {
       const error = err as Error;
       setError(error.message);
