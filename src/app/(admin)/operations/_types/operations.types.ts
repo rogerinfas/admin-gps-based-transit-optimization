@@ -6,6 +6,7 @@ export interface RouteItem {
   name: string;
   description: string | null;
   imageUrl: string | null;
+  color: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

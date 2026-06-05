@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import MainNavbar from "./main-navbar";
+import MainFooter from "./main-footer";
 
 type PageShellProps = {
   children: ReactNode;
@@ -13,11 +14,12 @@ export default function PageShell({
   mainClassName,
 }: PageShellProps) {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
       <MainNavbar variant={navbarVariant} />
-      <main className={mainClassName ?? "mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8 md:px-10"}>
+      <main className={mainClassName ?? "mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-6 py-8 md:px-10"}>
         {children}
       </main>
+      <MainFooter />
     </div>
   );
 }

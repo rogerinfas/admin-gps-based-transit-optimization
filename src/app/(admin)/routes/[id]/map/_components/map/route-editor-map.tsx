@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Polyline, CircleMarker, useMapEvents, Tooltip 
 import 'leaflet/dist/leaflet.css';
 import { useState, useEffect } from 'react';
 import { getBackendUrl } from '@/lib/api/types/backend';
+import { toast } from 'sonner';
 
 interface RouteEditorMapProps {
   routeId: string;
@@ -18,7 +19,7 @@ function MapEvents({ onMapClick }: { onMapClick: (lat: number, lng: number) => v
 }
 
 export default function RouteEditorMap({ routeId }: RouteEditorMapProps) {
-  const [route, setRoute] = useState<{ name: string; outboundPath?: [number, number][]; returnPath?: [number, number][] } | null>(null);
+  const [route, setRoute] = useState<{ name: string; color?: string; outboundPath?: [number, number][]; returnPath?: [number, number][] } | null>(null);
   
   const [direction, setDirection] = useState<'outbound' | 'return'>('outbound');
 
@@ -152,7 +153,7 @@ export default function RouteEditorMap({ routeId }: RouteEditorMapProps) {
       
       if (!res.ok) throw new Error('Error al guardar en el servidor');
       
-      alert('Rutas guardadas exitosamente');
+      toast.success('Rutas guardadas exitosamente');
     } catch (err) {
       const error = err as Error;
       setError(error.message);
@@ -170,24 +171,34 @@ export default function RouteEditorMap({ routeId }: RouteEditorMapProps) {
   const activeWaypoints = direction === 'outbound' ? waypointsOutbound : waypointsReturn;
   const activeSnapped = direction === 'outbound' ? snappedPathOutbound : snappedPathReturn;
 
+  const currentRouteColor = route.color || "#2563eb";
+
   return (
     <div className="relative w-full overflow-hidden border border-slate-200 shadow-xl rounded-2xl flex flex-col">
       <div className="bg-white p-4 flex justify-between items-center border-b border-slate-200 z-10 relative">
         <div className="flex flex-col gap-2">
-          <h3 className="text-lg font-bold text-slate-800">Editando: {route.name}</h3>
+          <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <span>Editando: {route.name}</span>
+            <span 
+              className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0 shadow-sm"
+              style={{ backgroundColor: currentRouteColor }}
+            />
+          </h3>
           
           <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg w-fit">
             <button
               onClick={() => setDirection('outbound')}
               className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${direction === 'outbound' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-200'}`}
+              style={direction === 'outbound' ? { backgroundColor: currentRouteColor } : undefined}
             >
-              Ruta IDA (Azul)
+              Ruta IDA
             </button>
             <button
               onClick={() => setDirection('return')}
               className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${direction === 'return' ? 'bg-orange-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-200'}`}
+              style={direction === 'return' ? { backgroundColor: currentRouteColor, opacity: 0.85 } : undefined}
             >
-              Ruta REGRESO (Naranja)
+              Ruta REGRESO
             </button>
           </div>
         </div>
@@ -233,14 +244,14 @@ export default function RouteEditorMap({ routeId }: RouteEditorMapProps) {
 
         {/* OUTBOUND PATH */}
         {snappedPathOutbound.length > 0 && (
-          <Polyline positions={snappedPathOutbound} color="#2563eb" weight={5} opacity={0.8} />
+          <Polyline positions={snappedPathOutbound} color={currentRouteColor} weight={5} opacity={0.9} />
         )}
         {waypointsOutbound.map((wp, i) => (
           <CircleMarker 
             key={`out-${i}`} 
             center={wp} 
             radius={i === 0 ? 8 : (i === waypointsOutbound.length - 1 ? 8 : 5)} 
-            color="#1e40af" 
+            color={currentRouteColor} 
             fillColor={i === 0 ? "#22c55e" : (i === waypointsOutbound.length - 1 ? "#ef4444" : "#ffffff")} 
             fillOpacity={1} 
             weight={2}
@@ -251,16 +262,16 @@ export default function RouteEditorMap({ routeId }: RouteEditorMapProps) {
 
         {/* RETURN PATH */}
         {snappedPathReturn.length > 0 && (
-          <Polyline positions={snappedPathReturn} color="#ea580c" weight={5} opacity={0.8} dashArray="10, 10" />
+          <Polyline positions={snappedPathReturn} color={currentRouteColor} weight={5} opacity={0.35} dashArray="10, 10" />
         )}
         {waypointsReturn.map((wp, i) => (
           <CircleMarker 
             key={`ret-${i}`} 
             center={wp} 
             radius={i === 0 ? 8 : (i === waypointsReturn.length - 1 ? 8 : 5)} 
-            color="#c2410c" 
+            color={currentRouteColor} 
             fillColor={i === 0 ? "#22c55e" : (i === waypointsReturn.length - 1 ? "#ef4444" : "#ffffff")} 
-            fillOpacity={1} 
+            fillOpacity={0.6} 
             weight={2}
           >
             <Tooltip>{i === 0 ? "Inicio Regreso" : (i === waypointsReturn.length - 1 ? "Fin Regreso" : `Punto ${i + 1} Regreso`)}</Tooltip>
