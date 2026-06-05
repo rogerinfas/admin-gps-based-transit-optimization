@@ -17,7 +17,7 @@ import {
   useDeleteVehicle,
 } from "../../_hooks/use-operations";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Bus, Route, MapPin } from "lucide-react";
+import { Plus, Pencil, Trash2, Bus, Route, MapPin, TrendingDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -261,6 +261,9 @@ export default function OperationsDashboard({ data }: Props) {
             TransiGo Ops Panel
           </h1>
         </div>
+        <Button variant="outline" render={<Link href="/operations/analytics" />} nativeButton={false} className="gap-2">
+          <TrendingDown size={16} /> Ver Análisis Wilcoxon
+        </Button>
       </section>
 
       <section className="mt-8 flex flex-col gap-8">
